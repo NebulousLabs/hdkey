@@ -11,7 +11,7 @@ import (
 // the errors are handled properly.
 func TestErrors(t *testing.T) {
 	// Should get an error when seed has too few bytes.
-	_, err := MasterHDKey(bytes.Repeat([]byte{0x00}, 15), BitcoinMasterKey,
+	_, err := NewMasterHDKey(bytes.Repeat([]byte{0x00}, 15), BitcoinMasterKey,
 		BTCMainSecVersion)
 	if err != ErrInvalidSeedLength {
 		t.Errorf("MasterHDKey: mismatched error -- got: %v, want: %v",
@@ -19,7 +19,7 @@ func TestErrors(t *testing.T) {
 	}
 
 	// Should get an error when seed has too many bytes.
-	_, err = MasterHDKey(bytes.Repeat([]byte{0x00}, 65), BitcoinMasterKey,
+	_, err = NewMasterHDKey(bytes.Repeat([]byte{0x00}, 65), BitcoinMasterKey,
 		BTCMainSecVersion)
 	if err != ErrInvalidSeedLength {
 		t.Errorf("MasterHDKey: mismatched error -- got: %v, want: %v",
@@ -32,7 +32,7 @@ func TestErrors(t *testing.T) {
 		t.Errorf("GenerateSeed: unexpected error: %v", err)
 		return
 	}
-	extKey, err := MasterHDKey(seed, BitcoinMasterKey, BTCMainSecVersion)
+	extKey, err := NewMasterHDKey(seed, BitcoinMasterKey, BTCMainSecVersion)
 	if err != nil {
 		t.Errorf("MasterHDKey: unexpected error: %v", err)
 		return

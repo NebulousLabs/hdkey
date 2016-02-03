@@ -1,14 +1,14 @@
 package hdkey
 
 const (
-	// Magic number that makes creates "xpub" prefix after base58 encoding.
+	// Magic number that creates "xpub" prefix after base58 encoding.
 	BTCMainPubVersion = uint32(0x0488B21E)
-	// Magic number that makes creates "xprv" prefix after base58 encoding.
+	// Magic number that creates "xprv" prefix after base58 encoding.
 	BTCMainSecVersion = uint32(0x0488ADE4)
 
-	// Magic number that makes creates "tpub" prefix after base58 encoding.
+	// Magic number that creates "tpub" prefix after base58 encoding.
 	BTCTestPubVersion = uint32(0x043587CF)
-	// Magic number that makes creates "tprv" prefix after base58 encoding.
+	// Magic number that creates "tprv" prefix after base58 encoding.
 	BTCTestSecVersion = uint32(0x04358394)
 )
 

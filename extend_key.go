@@ -14,9 +14,9 @@ const HardenedKeyStart = 0x80000000
 // BitcoinMasterKey is the master seed according to BIP32.
 var BitcoinMasterKey = []byte("Bitcoin seed")
 
-// MasterHDKey computes the root HD key from the given seed, key and private
+// NewMasterHDKey computes the root HD key from the given seed, key and private
 // version.
-func MasterHDKey(seed, key []byte, version uint32) (*HDKey, error) {
+func NewMasterHDKey(seed, key []byte, version uint32) (*HDKey, error) {
 	if len(seed) < MinSeedSize || len(seed) > MaxSeedSize {
 		return nil, ErrInvalidSeedLength
 	}

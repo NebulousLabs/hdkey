@@ -216,9 +216,9 @@ tests:
 			continue
 		}
 
-		extKey, err := MasterHDKey(masterSeed, BitcoinMasterKey, test.ver)
+		extKey, err := NewMasterHDKey(masterSeed, BitcoinMasterKey, test.ver)
 		if err != nil {
-			t.Errorf("MasterHDKey #%d (%s): unexpected error when "+
+			t.Errorf("NewMasterHDKey #%d (%s): unexpected error when "+
 				"creating new master key: %v", i, test.name,
 				err)
 			continue
@@ -694,9 +694,9 @@ func TestZero(t *testing.T) {
 				i, test.name, err)
 			continue
 		}
-		key, err := MasterHDKey(masterSeed, BitcoinMasterKey, BTCMainSecVersion)
+		key, err := NewMasterHDKey(masterSeed, BitcoinMasterKey, BTCMainSecVersion)
 		if err != nil {
-			t.Errorf("MasterHDKey #%d (%s): unexpected error when "+
+			t.Errorf("NewMasterHDKey #%d (%s): unexpected error when "+
 				"creating new master key: %v", i, test.name,
 				err)
 			continue

@@ -6,7 +6,7 @@ import (
 
 func BenchmarkDerivePublicFromSecret(b *testing.B) {
 	seed, _ := GenerateSeed(RecommendedSeedSize)
-	master, _ := MasterHDKey(seed, BitcoinMasterKey, BTCMainSecVersion)
+	master, _ := NewMasterHDKey(seed, BitcoinMasterKey, BTCMainSecVersion)
 
 	b.ResetTimer()
 	for i := uint32(0); i < uint32(b.N); i++ {
@@ -16,7 +16,7 @@ func BenchmarkDerivePublicFromSecret(b *testing.B) {
 
 func BenchmarkDeriveSecretFromSecret(b *testing.B) {
 	seed, _ := GenerateSeed(RecommendedSeedSize)
-	master, _ := MasterHDKey(seed, BitcoinMasterKey, BTCMainSecVersion)
+	master, _ := NewMasterHDKey(seed, BitcoinMasterKey, BTCMainSecVersion)
 
 	b.ResetTimer()
 	for i := uint32(0); i < uint32(b.N); i++ {
@@ -26,7 +26,7 @@ func BenchmarkDeriveSecretFromSecret(b *testing.B) {
 
 func BenchmarkDerivePublicFromPublic(b *testing.B) {
 	seed, _ := GenerateSeed(RecommendedSeedSize)
-	master, _ := MasterHDKey(seed, BitcoinMasterKey, BTCMainSecVersion)
+	master, _ := NewMasterHDKey(seed, BitcoinMasterKey, BTCMainSecVersion)
 	masterPub, _ := master.Neuter(BitcoinVMap)
 
 	b.ResetTimer()
