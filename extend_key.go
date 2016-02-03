@@ -14,6 +14,8 @@ const HardenedKeyStart = 0x80000000
 // BitcoinMasterKey is the master seed according to BIP32.
 var BitcoinMasterKey = []byte("Bitcoin seed")
 
+// MasterHDKey computes the root HD key from the given seed, key and private
+// version.
 func MasterHDKey(seed, key []byte, version uint32) (*HDKey, error) {
 	if len(seed) < MinSeedSize || len(seed) > MaxSeedSize {
 		return nil, ErrInvalidSeedLength
@@ -33,27 +35,35 @@ func MasterHDKey(seed, key []byte, version uint32) (*HDKey, error) {
 	return newHDSecretKey(version, 0, 0, 0, chainCode, sk), nil
 }
 
+// Child computes the descendant of an HDKey at the specified child number.
 func (k *HDKey) Child(i uint32) (*HDKey, error) {
+	// Verify that child derivation is possible
 	isChildHardened := i >= HardenedKeyStart
 	if !k.isPrivate() && isChildHardened {
 		return nil, ErrDeriveHardenedFromPublic
 	}
 
-	data := make([]byte, childKeySize+childNumberSize)
+	// Assemble seed data for HMAC
+	seed := make([]byte, childKeySize+childNumberSize)
 	if isChildHardened {
-		copy(data, k[childKeyOffset:])
+		// Copy 0x00 || 32-byte secret key
+		copy(seed, k[childKeyOffset:])
 	} else {
-		copy(data, k.CompressedPublicKey()[:])
+		// Copy HEADER || 32-byte X-coordinate
+		copy(seed, k.CompressedPublicKey()[:])
 	}
-	binary.BigEndian.PutUint32(data[childKeySize:], i)
+	// Copy child number as uint32
+	binary.BigEndian.PutUint32(seed[childKeySize:], i)
 
-	il, childChainCode := util.HMAC512Split(k.chainCode(), data)
+	// il, ir = HMAC-512(key, seed), defer clean up
+	il, childChainCode := util.HMAC512Split(k.chainCode(), seed)
 	defer func() { util.Zero(il); util.Zero(childChainCode) }()
 
-	// Left 32 bytes becomes intermediate secret key
+	// Left 32 bytes becomes intermediate secret key, defer clean up
 	ilInt := new(big.Int).SetBytes(il)
 	defer func() { ilInt.SetUint64(0) }()
 
+	// Check that ilInt creates valid SecretKey, defer clean up
 	sk, err := eckey.NewSecretKeyInt(ilInt)
 	if err != nil {
 		return nil, ErrUnusableSeed
@@ -65,12 +75,14 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 	fpBytes := util.Hash160(parentCPK[:])[:fingerprintSize]
 	fp := binary.BigEndian.Uint32(fpBytes)
 
+	// If key is private, derive a child secret key
 	if k.isPrivate() {
 		sk := k.computeChildSecret(ilInt)
 		return newHDSecretKey(ver, k.depth()+1, fp, i, childChainCode, sk), nil
 	}
 
-	cpk, err := computeChildPublic(parentCPK, il)
+	// Otherwise, compute child public key
+	cpk, err := computeChildPublic(parentCPK, sk)
 	if err != nil {
 		return nil, err
 	}
@@ -78,16 +90,21 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 	return newHDPublicKey(ver, k.depth()+1, fp, i, childChainCode, cpk), nil
 }
 
+// Neuter converts a private HDKey into a public HDKey, effectively removing the
+// signing capabilities.
 func (k *HDKey) Neuter(vMap VersionMap) (*HDKey, error) {
+	// HDKey is already public
 	if !k.isPrivate() {
 		return k, nil
 	}
 
+	// Check for public version mapping
 	version, ok := vMap[k.version()]
 	if !ok {
 		return nil, ErrUnknownVersionMapping
 	}
 
+	// Compute compressed public key from secret and assemble HDKey
 	fp := k.parentFingerprint()
 	i := k.childNumber()
 	cpk := k.CompressedPublicKey()
@@ -95,6 +112,8 @@ func (k *HDKey) Neuter(vMap VersionMap) (*HDKey, error) {
 	return newHDPublicKey(version, k.depth(), fp, i, k.chainCode(), cpk), nil
 }
 
+// computeChildSecret helper method that derives a child secret key from the
+// intermediary state.
 func (k *HDKey) computeChildSecret(ilInt *big.Int) *eckey.SecretKey {
 	keyInt := new(big.Int).SetBytes(k[childKeyOffset+1:])
 	defer func() { keyInt.SetUint64(0) }()
@@ -108,19 +127,16 @@ func (k *HDKey) computeChildSecret(ilInt *big.Int) *eckey.SecretKey {
 	return sk
 }
 
-func computeChildPublic(cpk *eckey.CompressedPublicKey, il []byte) (*eckey.CompressedPublicKey, error) {
+// computeChildPublic helper method that derives a child public key from the
+// intermediary state.
+func computeChildPublic(cpk *eckey.CompressedPublicKey,
+	sk *eckey.SecretKey) (*eckey.CompressedPublicKey, error) {
 	pk, err := cpk.Uncompress()
 	if err != nil {
 		return nil, err
 	}
 
-	entropy := new(eckey.Entropy)
-	copy(entropy[:], il)
-	_, ilPK := eckey.GenerateKeyPairDeterministic(entropy)
-
-	util.Zero(entropy[:])
-
-	childPk := eckey.Add(pk, ilPK)
+	childPk := eckey.Add(pk, sk.PublicKey())
 
 	return childPk.Compress(), nil
 }
