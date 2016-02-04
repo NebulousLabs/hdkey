@@ -10,22 +10,22 @@ import (
 	"testing"
 )
 
-/*
-const (
-	SiaPublicVersion = 0x041E78E8
-	SiaSecretVersion = 0x041E78FF
-)
-
-var (
-	SiaMainVMap  = NewVersionMap(SiaPublicVersion, SiaSecretVersion)
-	SiaMasterKey = []byte("Siacoin seed")
-)
-*/
-
 const (
 	// The master seeds for each of the two test vectors in [BIP32].
 	testVec1MasterHex = "000102030405060708090a0b0c0d0e0f"
 	testVec2MasterHex = "fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"
+
+	// Test versions for building version map
+	testPublicVersion = 0x041E78E8
+	testSecretVersion = 0x041E78FF
+)
+
+var (
+	testMasterKey = []byte("Siacoin seed")
+
+	testVMap = VersionMap{
+		testSecretVersion: testPublicVersion,
+	}
 )
 
 func TestBIP0032Vectors(t *testing.T) {
@@ -35,63 +35,49 @@ func TestBIP0032Vectors(t *testing.T) {
 		path     []uint32
 		wantPub  string
 		wantPriv string
-		ver      uint32
-		vmap     VersionMap
 	}{
 		// Test vector 1
 		{
 			name:     "test vector 1 chain m",
 			master:   testVec1MasterHex,
 			path:     []uint32{},
-			wantPub:  "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
-			wantPriv: "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e8000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb70210acb01355c989d305071919fe3bca7be9937e5f5e3cd9548122e8b1773bfee972df215e",
+			wantPriv: "041e78ff000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb7001e2d32d505698faa661cc459346ea9abb1a9c890ccd26b56ffad7d0bf492aca23f49c7d5",
 		},
 		{
 			name:     "test vector 1 chain m/0H",
 			master:   testVec1MasterHex,
 			path:     []uint32{HardenedKeyStart},
-			wantPub:  "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw",
-			wantPriv: "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e801ccabdd1780000000702278cf3dcb9d3e01e46df9efdab6b2922706198e09c36e8c8e195ace9509b803fe0df52e80c533e483bc3423d03a70369c37dd197de6a72afb02b2e8395a7b686f939681",
+			wantPriv: "041e78ff01ccabdd1780000000702278cf3dcb9d3e01e46df9efdab6b2922706198e09c36e8c8e195ace9509b80040d786d06ca258b07b10a4e05dcce32ef773f073888e232d9e27a6860844332dc73e6db1",
 		},
 		{
 			name:     "test vector 1 chain m/0H/1",
 			master:   testVec1MasterHex,
 			path:     []uint32{HardenedKeyStart, 1},
-			wantPub:  "xpub6ASuArnXKPbfEwhqN6e3mwBcDTgzisQN1wXN9BJcM47sSikHjJf3UFHKkNAWbWMiGj7Wf5uMash7SyYq527Hqck2AxYysAA7xmALppuCkwQ",
-			wantPriv: "xprv9wTYmMFdV23N2TdNG573QoEsfRrWKQgWeibmLntzniatZvR9BmLnvSxqu53Kw1UmYPxLgboyZQaXwTCg8MSY3H2EU4pWcQDnRnrVA1xe8fs",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e802b888da0e0000000142b684870a23dae9cb90d83938789a035726ae76090534de92d310d501503696020687f9d636ed69b2f03f4b6163705438d2a18f0fd096348f5ce9f6e22367a6890e3357bd",
+			wantPriv: "041e78ff02b888da0e0000000142b684870a23dae9cb90d83938789a035726ae76090534de92d310d50150369600c3e7d854f14ea91bf2f8118227d78da7a33595621460011d0152802154a24a81e5a40b67",
 		},
 		{
 			name:     "test vector 1 chain m/0H/1/2H",
 			master:   testVec1MasterHex,
 			path:     []uint32{HardenedKeyStart, 1, HardenedKeyStart + 2},
-			wantPub:  "xpub6D4BDPcP2GT577Vvch3R8wDkScZWzQzMMUm3PWbmWvVJrZwQY4VUNgqFJPMM3No2dFDFGTsxxpG5uJh7n7epu4trkrX7x7DogT5Uv6fcLW5",
-			wantPriv: "xprv9z4pot5VBttmtdRTWfWQmoH1taj2axGVzFqSb8C9xaxKymcFzXBDptWmT7FwuEzG3ryjH4ktypQSAewRiNMjANTtpgP4mLTj34bhnZX7UiM",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e8039da73efa800000029d9cdb88df21fbe33af83e47cfffce7ffabe82b49ae365fe8426a9e1afa2aed603b88b9315bf4a481d071cac5615a2a07fbbb726d9bb173bb339c4a68b85c78054157b99d4",
+			wantPriv: "041e78ff039da73efa800000029d9cdb88df21fbe33af83e47cfffce7ffabe82b49ae365fe8426a9e1afa2aed6002ffb9f19dce13fba528c46e9765694d7c6cc2559a45dbdfc662c0f3873f3c362b24a73ee",
 		},
 		{
 			name:     "test vector 1 chain m/0H/1/2H/2",
 			master:   testVec1MasterHex,
 			path:     []uint32{HardenedKeyStart, 1, HardenedKeyStart + 2, 2},
-			wantPub:  "xpub6FHa3pjLCk84BayeJxFW2SP4XRrFd1JYnxeLeU8EqN3vDfZmbqBqaGJAyiLjTAwm6ZLRQUMv1ZACTj37sR62cfN7fe5JnJ7dh8zL4fiyLHV",
-			wantPriv: "xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e8041cd3abc4000000020f6d0fb30028d9a910281cfd0e32754aa869bd293f1af292f8364a875932d69d03ae53703aa3cc8dc5854d2788462ae9be26ec940e53f1d06c19c37e757f3bc5ee835e482a",
+			wantPriv: "041e78ff041cd3abc4000000020f6d0fb30028d9a910281cfd0e32754aa869bd293f1af292f8364a875932d69d002c385d90d87e9caaadee31e05901b62185d1febb12a9530560b9da7d5f56fb803d261b4a",
 		},
 		{
 			name:     "test vector 1 chain m/0H/1/2H/2/1000000000",
 			master:   testVec1MasterHex,
 			path:     []uint32{HardenedKeyStart, 1, HardenedKeyStart + 2, 2, 1000000000},
-			wantPub:  "xpub6H1LXWLaKsWFhvm6RVpEL9P4KfRZSW7abD2ttkWP3SSQvnyA8FSVqNTEcYFgJS2UaFcxupHiYkro49S8yGasTvXEYBVPamhGW6cFJodrTHy",
-			wantPriv: "xprvA41z7zogVVwxVSgdKUHDy1SKmdb533PjDz7J6N6mV6uS3ze1ai8FHa8kmHScGpWmj4WggLyQjgPie1rFSruoUihUZREPSL39UNdE3BBDu76",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e80525d823953b9aca0078a3a0f1ea6770cfd878800b0a16c83cec2abec585d44dae432dd342a36617f5039bf5dfbbfd57a86290054e57f03cebe8d9044144257c96940138ea28bb1dc078210794f5",
+			wantPriv: "041e78ff0525d823953b9aca0078a3a0f1ea6770cfd878800b0a16c83cec2abec585d44dae432dd342a36617f50049f30caefe3db11fa60187c99d57fe0ab6aa4f2c81a7cee7ba544443c5b1ada9344197a1",
 		},
 
 		// Test vector 2
@@ -99,111 +85,43 @@ func TestBIP0032Vectors(t *testing.T) {
 			name:     "test vector 2 chain m",
 			master:   testVec2MasterHex,
 			path:     []uint32{},
-			wantPub:  "xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB",
-			wantPriv: "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e800000000000000000062630af7cd0242358538297c89d7f52a17cef5989332bb08a1a0ef809417b01d02dbef313022f524f3c3d4bca7553b9b3203c78583c8eedf6ac88ae59a2831b2b85e74d200",
+			wantPriv: "041e78ff00000000000000000062630af7cd0242358538297c89d7f52a17cef5989332bb08a1a0ef809417b01d003a4f489053d1bbe446655dd1ec847b973c8a42d8167d0b27184cfb23a3a5fc4ebe999d11",
 		},
 		{
 			name:     "test vector 2 chain m/0",
 			master:   testVec2MasterHex,
 			path:     []uint32{0},
-			wantPub:  "xpub69H7F5d8KSRgmmdJg2KhpAK8SR3DjMwAdkxj3ZuxV27CprR9LgpeyGmXUbC6wb7ERfvrnKZjXoUmmDznezpbZb7ap6r1D3tgFxHmwMkQTPH",
-			wantPriv: "xprv9vHkqa6EV4sPZHYqZznhT2NPtPCjKuDKGY38FBWLvgaDx45zo9WQRUT3dKYnjwih2yJD9mkrocEZXo1ex8G81dwSM1fwqWpWkeS3v86pgKt",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e80122cef5b30000000098510442a2d2e707492e9efad180892e2c06e56bead8feccbd70873b584e60f203533e4b2d84e2939016064ba8cd7227e5f2b05be5f0219e3df03da579389569362a092ba6",
+			wantPriv: "041e78ff0122cef5b30000000098510442a2d2e707492e9efad180892e2c06e56bead8feccbd70873b584e60f200384b96fee8ac2550a10231d0659ec433f6e379b1060dcb5eabd2a78ad4f351d2bfdd5111",
 		},
 		{
 			name:     "test vector 2 chain m/0/2147483647H",
 			master:   testVec2MasterHex,
 			path:     []uint32{0, HardenedKeyStart + 2147483647},
-			wantPub:  "xpub6ASAVgeehLbnwdqV6UKMHVzgqAG8Gr6riv3Fxxpj8ksbH9ebxaEyBLZ85ySDhKiLDBrQSARLq1uNRts8RuJiHjaDMBU4Zn9h8LZNnBC5y4a",
-			wantPriv: "xprv9wSp6B7kry3Vj9m1zSnLvN3xH8RdsPP1Mh7fAaR7aRLcQMKTR2vidYEeEg2mUCTAwCd6vnxVrcjfy2kRgVsFawNzmjuHc2YmYRmagcEPdU9",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e80242a4096fffffffff147726a27ff4b6878806f8708d0f6e8548b524f99d5beb60d401101908bd124f0381048b992eb9f67f843a59cbb7b28b27c9ca491789417b2f22c9966fa1e119e71dee26ba",
+			wantPriv: "041e78ff0242a4096fffffffff147726a27ff4b6878806f8708d0f6e8548b524f99d5beb60d401101908bd124f00fa1e433f5a4c73480069c9190257873a41f2d8c89c7612dbc9de3cd2c247e36c5e443730",
 		},
 		{
 			name:     "test vector 2 chain m/0/2147483647H/1",
 			master:   testVec2MasterHex,
 			path:     []uint32{0, HardenedKeyStart + 2147483647, 1},
-			wantPub:  "xpub6DF8uhdarytz3FWdA8TvFSvvAh8dP3283MY7p2V4SeE2wyWmG5mg5EwVvmdMVCQcoNJxGoWaU9DCWh89LojfZ537wTfunKau47EL2dhHKon",
-			wantPriv: "xprv9zFnWC6h2cLgpmSA46vutJzBcfJ8yaJGg8cX1e5StJh45BBciYTRXSd25UEPVuesF9yog62tGAQtHjXajPPdbRCHuWS6T8XA2ECKADdw4Ef",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e8033085cf3300000001c1d994f6ae09731f6c6d8abb70b4178c8075eea25ecede54150f8d442a214f0e03993e30e99ddb452deab375209de0816beeb400bff3678db13a2d732d6adab97b79ff569c",
+			wantPriv: "041e78ff033085cf3300000001c1d994f6ae09731f6c6d8abb70b4178c8075eea25ecede54150f8d442a214f0e005195cf5fde0bc73194b20142be0368aa9eb42271ab8240775a0864a20d107feab8cbb43b",
 		},
 		{
 			name:     "test vector 2 chain m/0/2147483647H/1/2147483646H",
 			master:   testVec2MasterHex,
 			path:     []uint32{0, HardenedKeyStart + 2147483647, 1, HardenedKeyStart + 2147483646},
-			wantPub:  "xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL",
-			wantPriv: "xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e804316609a5fffffffe05cc3ee156c622f26e0faae02fb190fc3ae9c1a4a4242709add94513f23d4e2003b08bdad2bf4a6350460e48bdcb8b9f9a507280a9bcace23e959ff7e53baa660ea1fde9fc",
+			wantPriv: "041e78ff04316609a5fffffffe05cc3ee156c622f26e0faae02fb190fc3ae9c1a4a4242709add94513f23d4e2000e9fbc48c877c73e27bce790e37370fabbb749fe12353940245c81ebf03e7be20003df838",
 		},
 		{
 			name:     "test vector 2 chain m/0/2147483647H/1/2147483646H/2",
 			master:   testVec2MasterHex,
 			path:     []uint32{0, HardenedKeyStart + 2147483647, 1, HardenedKeyStart + 2147483646, 2},
-			wantPub:  "xpub6FnCn6nSzZAw5Tw7cgR9bi15UV96gLZhjDstkXXxvCLsUXBGXPdSnLFbdpq8p9HmGsApME5hQTZ3emM2rnY5agb9rXpVGyy3bdW6EEgAtqt",
-			wantPriv: "xprvA2nrNbFZABcdryreWet9Ea4LvTJcGsqrMzxHx98MMrotbir7yrKCEXw7nadnHM8Dq38EGfSh6dqA9QWTyefMLEcBYJUuekgW4BYPJcr9E7j",
-			ver:      BTCMainSecVersion,
-			vmap:     BitcoinVMap,
-		},
-
-		// Test vector 1 - Testnet
-		{
-			name:     "test vector 1 chain m - testnet",
-			master:   testVec1MasterHex,
-			path:     []uint32{},
-			wantPub:  "tpubD6NzVbkrYhZ4XgiXtGrdW5XDAPFCL9h7we1vwNCpn8tGbBcgfVYjXyhWo4E1xkh56hjod1RhGjxbaTLV3X4FyWuejifB9jusQ46QzG87VKp",
-			wantPriv: "tprv8ZgxMBicQKsPeDgjzdC36fs6bMjGApWDNLR9erAXMs5skhMv36j9MV5ecvfavji5khqjWaWSFhN3YcCUUdiKH6isR4Pwy3U5y5egddBr16m",
-			ver:      BTCTestSecVersion,
-			vmap:     BitcoinVMap,
-		},
-		{
-			name:     "test vector 1 chain m/0H - testnet",
-			master:   testVec1MasterHex,
-			path:     []uint32{HardenedKeyStart},
-			wantPub:  "tpubD8eQVK4Kdxg3gHrF62jGP7dKVCoYiEB8dFSpuTawkL5YxTus5j5pf83vaKnii4bc6v2NVEy81P2gYrJczYne3QNNwMTS53p5uzDyHvnw2jm",
-			wantPriv: "tprv8bxNLu25VazNnppTCP4fyhyCvBHcYtzE3wr3cwYeL4HA7yf6TLGEUdS4QC1vLT63TkjRssqJe4CvGNEC8DzW5AoPUw56D1Ayg6HY4oy8QZ9",
-			ver:      BTCTestSecVersion,
-			vmap:     BitcoinVMap,
-		},
-		{
-			name:     "test vector 1 chain m/0H/1 - testnet",
-			master:   testVec1MasterHex,
-			path:     []uint32{HardenedKeyStart, 1},
-			wantPub:  "tpubDApXh6cD2fZ7WjtgpHd8yrWyYaneiFuRZa7fVjMkgxsmC1QzoXW8cgx9zQFJ81Jx4deRGfRE7yXA9A3STsxXj4CKEZJHYgpMYikkas9DBTP",
-			wantPriv: "tprv8e8VYgZxtHsSdGrtvdxYaSrryZGiYviWzGWtDDKTGh5NMXAEB8gYSCLHpFCywNs5uqV7ghRjimALQJkRFZnUrLHpzi2pGkwqLtbubgWuQ8q",
-			ver:      BTCTestSecVersion,
-			vmap:     BitcoinVMap,
-		},
-		{
-			name:     "test vector 1 chain m/0H/1/2H - testnet",
-			master:   testVec1MasterHex,
-			path:     []uint32{HardenedKeyStart, 1, HardenedKeyStart + 2},
-			wantPub:  "tpubDDRojdS4jYQXNugn4t2WLrZ7mjfAyoVQu7MLk4eurqFCbrc7cHLZX8W5YRS8ZskGR9k9t3PqVv68bVBjAyW4nWM9pTGRddt3GQftg6MVQsm",
-			wantPriv: "tprv8gjmbDPpbAirVSezBEMuwSu1Ci9EpUJWKokZTYccSZSomNMLytWyLdtDNHRbucNaRJWWHANf9AzEdWVAqahfyRjVMKbNRhBmxAM8EJr7R15",
-			ver:      BTCTestSecVersion,
-			vmap:     BitcoinVMap,
-		},
-		{
-			name:     "test vector 1 chain m/0H/1/2H/2 - testnet",
-			master:   testVec1MasterHex,
-			path:     []uint32{HardenedKeyStart, 1, HardenedKeyStart + 2, 2},
-			wantPub:  "tpubDFfCa4Z1v25WTPAVm9EbEMiRrYwucPocLbEe12BPBGooxxEUg42vihy1DkRWyftztTsL23snYezF9uXjGGwGW6pQjEpcTpmsH6ajpf4CVPn",
-			wantPriv: "tprv8iyAReWmmePqZv8hsVZzpx4KHXRyT4chmHdriW95m11R8Tyi3fDLYDM93bq4NGn1V6eCu5cE3zSQ6hPd31F2ApKXkZgTyn1V78pHjkq1V2v",
-			ver:      BTCTestSecVersion,
-			vmap:     BitcoinVMap,
-		},
-		{
-			name:     "test vector 1 chain m/0H/1/2H/2/1000000000 - testnet",
-			master:   testVec1MasterHex,
-			path:     []uint32{HardenedKeyStart, 1, HardenedKeyStart + 2, 2, 1000000000},
-			wantPub:  "tpubDHNy3kAG39ThyiwwsgoKY4iRenXDRtce8qdCFJZXPMCJg5dsCUHayp84raLTpvyiNA9sXPob5rgqkKvkN8S7MMyXbnEhGJMW64Cf4vFAoaF",
-			wantPriv: "tprv8kgvuL81tmn36Fv9z38j8f4K5m1HGZRjZY2QxnXDy5PuqbP6a5TzoKWCgTcGHBu66W3TgSbAu2yX6sPza5FkHmy564Sh6gmCPUNeUt4yj2x",
-			ver:      BTCTestSecVersion,
-			vmap:     BitcoinVMap,
+			wantPub:  "041e78e805941b91fd000000024983fe6951d9c4b1c1fdb327de8cbbc0c315556b7d815f4e956bad2c42944c6003bbb591cf9884a36f9d17d3445079103b0972b8ab305bc95490bc6e9eb94097be60e7ff4e",
+			wantPriv: "041e78ff05941b91fd000000024983fe6951d9c4b1c1fdb327de8cbbc0c315556b7d815f4e956bad2c42944c600075d5d2df7aa5325133b3415606a90b7f42d577b7f59aded72a2faba5793494e945f5dc5a",
 		},
 	}
 
@@ -216,7 +134,7 @@ tests:
 			continue
 		}
 
-		extKey, err := NewMasterHDKey(masterSeed, BitcoinMasterKey, test.ver)
+		extKey, err := NewMasterHDKey(masterSeed, testMasterKey, testSecretVersion)
 		if err != nil {
 			t.Errorf("NewMasterHDKey #%d (%s): unexpected error when "+
 				"creating new master key: %v", i, test.name,
@@ -233,7 +151,14 @@ tests:
 			}
 		}
 
-		pubKey, err := extKey.Neuter(test.vmap)
+		privStr := extKey.String()
+		if privStr != test.wantPriv {
+			t.Errorf("Serialize #%d (%s): mismatched serialized "+
+				"private extended key -- got: %s, want: %s", i,
+				test.name, privStr, test.wantPriv)
+		}
+
+		pubKey, err := extKey.Neuter(testVMap)
 		if err != nil {
 			t.Errorf("Neuter #%d (%s): unexpected error: %v ", i,
 				test.name, err)
@@ -241,7 +166,7 @@ tests:
 		}
 
 		// Neutering a second time should have no effect.
-		pubKey, err = pubKey.Neuter(test.vmap)
+		pubKey, err = pubKey.Neuter(testVMap)
 		if err != nil {
 			t.Errorf("Neuter #%d (%s): unexpected error: %v", i,
 				test.name, err)
@@ -262,8 +187,8 @@ tests:
 // other public keys works as intended.
 func TestPublicDerivation(t *testing.T) {
 	// The public extended keys for test vectors in [BIP32].
-	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
-	testVec2MasterPubKey := "xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB"
+	testVec1MasterPubKey := "041e78e8000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb70210acb01355c989d305071919fe3bca7be9937e5f5e3cd9548122e8b1773bfee972df215e"
+	testVec2MasterPubKey := "041e78e800000000000000000062630af7cd0242358538297c89d7f52a17cef5989332bb08a1a0ef809417b01d02dbef313022f524f3c3d4bca7553b9b3203c78583c8eedf6ac88ae59a2831b2b85e74d200"
 
 	tests := []struct {
 		name    string
@@ -276,37 +201,37 @@ func TestPublicDerivation(t *testing.T) {
 			name:    "test vector 1 chain m",
 			master:  testVec1MasterPubKey,
 			path:    []uint32{},
-			wantPub: "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
+			wantPub: "041e78e8000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb70210acb01355c989d305071919fe3bca7be9937e5f5e3cd9548122e8b1773bfee972df215e",
 		},
 		{
 			name:    "test vector 1 chain m/0",
 			master:  testVec1MasterPubKey,
 			path:    []uint32{0},
-			wantPub: "xpub68Gmy5EVb2BdFbj2LpWrk1M7obNuaPTpT5oh9QCCo5sRfqSHVYWex97WpDZzszdzHzxXDAzPLVSwybe4uPYkSk4G3gnrPqqkV9RyNzAcNJ1",
+			wantPub: "041e78e801ccabdd170000000009bf0971d56b423921e085285ece65e42c7cb357bcf0387f62af263947651ec5037c3d552fd7c89c8729c4f144586487988e79811025b82c64f7a67a71503548df3c3a6e71",
 		},
 		{
 			name:    "test vector 1 chain m/0/1",
 			master:  testVec1MasterPubKey,
 			path:    []uint32{0, 1},
-			wantPub: "xpub6AvUGrnEpfvJBbfx7sQ89Q8hEMPM65UteqEX4yUbUiES2jHfjexmfJoxCGSwFMZiPBaKQT1RiKWrKfuDV4vpgVs4Xn8PpPTR2i79rwHd4Zr",
+			wantPub: "041e78e802acf42ec4000000017b8ac2e1fe3b50c8efdbdf1513971ca9af8b4d3faf6ba30b979493e12e2cd37603fa4ce648e9e15b374fb0d475f2ef4ec7dc136a16c2e2f6c1242a4ff38e25e1a070592dc0",
 		},
 		{
 			name:    "test vector 1 chain m/0/1/2",
 			master:  testVec1MasterPubKey,
 			path:    []uint32{0, 1, 2},
-			wantPub: "xpub6BqyndF6rhZqmgktFCBcapkwubGxPqoAZtQaYewJHXVKZcLdnqBVC8N6f6FSHWUghjuTLeubWyQWfJdk2G3tGgvgj3qngo4vLTnnSjAZckv",
+			wantPub: "041e78e8031d38acf4000000021dd9a105aa0cf129cea2d42538f6736de6b99d90c02cb6a9ec886213cdb6708a02bef31aebe1fa3c8209c5d910d9da893e7645714ed858d4e5103bf93624dcbd4b116c7a41",
 		},
 		{
 			name:    "test vector 1 chain m/0/1/2/2",
 			master:  testVec1MasterPubKey,
 			path:    []uint32{0, 1, 2, 2},
-			wantPub: "xpub6FHUhLbYYkgFQiFrDiXRfQFXBB2msCxKTsNyAExi6keFxQ8sHfwpogY3p3s1ePSpUqLNYks5T6a3JqpCGszt4kxbyq7tUoFP5c8KWyiDtPp",
+			wantPub: "041e78e804304df06f000000028bc85f493f3a08e9925636eab843887802174be8aa13754f4d09de7166cea07103908505e9776fdaa91f0fca591d4e56e097bfec06ce8446cdebc0d747936af96090694150",
 		},
 		{
 			name:    "test vector 1 chain m/0/1/2/2/1000000000",
 			master:  testVec1MasterPubKey,
 			path:    []uint32{0, 1, 2, 2, 1000000000},
-			wantPub: "xpub6GX3zWVgSgPc5tgjE6ogT9nfwSADD3tdsxpzd7jJoJMqSY12Be6VQEFwDCp6wAQoZsH2iq5nNocHEaVDxBcobPrkZCjYW3QUmoDYzMFBDu9",
+			wantPub: "041e78e80554ec2ba73b9aca00fd3808afe55f204fdcf760f6802e9527ef8d4c7ad1655a3ce3430c155eae6f2402082522d373fbed4ad853973d8e012889001fd4b25f290e1a380bce606a12e53707ab8da2",
 		},
 
 		// Test vector 2
@@ -314,37 +239,37 @@ func TestPublicDerivation(t *testing.T) {
 			name:    "test vector 2 chain m",
 			master:  testVec2MasterPubKey,
 			path:    []uint32{},
-			wantPub: "xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB",
+			wantPub: "041e78e800000000000000000062630af7cd0242358538297c89d7f52a17cef5989332bb08a1a0ef809417b01d02dbef313022f524f3c3d4bca7553b9b3203c78583c8eedf6ac88ae59a2831b2b85e74d200",
 		},
 		{
 			name:    "test vector 2 chain m/0",
 			master:  testVec2MasterPubKey,
 			path:    []uint32{0},
-			wantPub: "xpub69H7F5d8KSRgmmdJg2KhpAK8SR3DjMwAdkxj3ZuxV27CprR9LgpeyGmXUbC6wb7ERfvrnKZjXoUmmDznezpbZb7ap6r1D3tgFxHmwMkQTPH",
+			wantPub: "041e78e80122cef5b30000000098510442a2d2e707492e9efad180892e2c06e56bead8feccbd70873b584e60f203533e4b2d84e2939016064ba8cd7227e5f2b05be5f0219e3df03da579389569362a092ba6",
 		},
 		{
 			name:    "test vector 2 chain m/0/2147483647",
 			master:  testVec2MasterPubKey,
 			path:    []uint32{0, 2147483647},
-			wantPub: "xpub6ASAVgeWMg4pmutghzHG3BohahjwNwPmy2DgM6W9wGegtPrvNgjBwuZRD7hSDFhYfunq8vDgwG4ah1gVzZysgp3UsKz7VNjCnSUJJ5T4fdD",
+			wantPub: "041e78e80242a4096f7fffffffa949c2f28698d8c7c8cca47d848604c25f4b834a115f35e7b2136d0f60f67e590325528c9ea428a3ade93254b7953eaa060c92a3d37bf8d0fc1841802b13511f733b13f6b1",
 		},
 		{
 			name:    "test vector 2 chain m/0/2147483647/1",
 			master:  testVec2MasterPubKey,
 			path:    []uint32{0, 2147483647, 1},
-			wantPub: "xpub6CrnV7NzJy4VdgP5niTpqWJiFXMAca6qBm5Hfsry77SQmN1HGYHnjsZSujoHzdxf7ZNK5UVrmDXFPiEW2ecwHGWMFGUxPC9ARipss9rXd4b",
+			wantPub: "041e78e803fa2b222b00000001b2b6dc8064d7543bd3a149ad439261407c8cfe13d30c77e4da4d6d23d0a7c5b1029162ba7bf3b85185f9ac960c0b69b1985e98ce9fd5b452825d50e6adfda7e6f363c2530a",
 		},
 		{
 			name:    "test vector 2 chain m/0/2147483647/1/2147483646",
 			master:  testVec2MasterPubKey,
 			path:    []uint32{0, 2147483647, 1, 2147483646},
-			wantPub: "xpub6FL2423qFaWzHCvBndkN9cbkn5cysiUeFq4eb9t9kE88jcmY63tNuLNRzpHPdAM4dUpLhZ7aUm2cJ5zF7KYonf4jAPfRqTMTRBNkQL3Tfta",
+			wantPub: "041e78e80423cbe6397ffffffec5c0c63b303a944b48103eb703702e2ee295ad4cb9e3304d49ee8305c7bd0430039d54a0603804e70e48288dd8af153f75a09ed79df3f78a0a04494cc7ce18c6391c93c210",
 		},
 		{
 			name:    "test vector 2 chain m/0/2147483647/1/2147483646/2",
 			master:  testVec2MasterPubKey,
 			path:    []uint32{0, 2147483647, 1, 2147483646, 2},
-			wantPub: "xpub6H7WkJf547AiSwAbX6xsm8Bmq9M9P1Gjequ5SipsjipWmtXSyp4C3uwzewedGEgAMsDy4jEvNTWtxLyqqHY9C12gaBmgUdk2CGmwachwnWK",
+			wantPub: "041e78e80563371647000000020ee87d2807810e4d39788640bf6317f4c994c51be53ef2b893c4329c7391099a031651fdd9bd442472c217922c288c662712da2ea232fe11f3adb247e79e217a54bc3bbbc2",
 		},
 	}
 
@@ -387,25 +312,22 @@ func TestExtendedKeyAPI(t *testing.T) {
 		privKey    string
 		privKeyErr error
 		pubKey     string
-		address    string
 	}{
 		{
 			name:      "test vector 1 master node private",
-			extKey:    "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
+			extKey:    "041e78ff000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb7001e2d32d505698faa661cc459346ea9abb1a9c890ccd26b56ffad7d0bf492aca23f49c7d5",
 			isPrivate: true,
 			parentFP:  0,
-			privKey:   "e8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35",
-			pubKey:    "0339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2",
-			address:   "15mKKb2eos1hWa6tisdPwwDC1a5J1y9nma",
+			privKey:   "1e2d32d505698faa661cc459346ea9abb1a9c890ccd26b56ffad7d0bf492aca2",
+			pubKey:    "0210acb01355c989d305071919fe3bca7be9937e5f5e3cd9548122e8b1773bfee9",
 		},
 		{
 			name:       "test vector 1 chain m/0H/1/2H public",
-			extKey:     "xpub6D4BDPcP2GT577Vvch3R8wDkScZWzQzMMUm3PWbmWvVJrZwQY4VUNgqFJPMM3No2dFDFGTsxxpG5uJh7n7epu4trkrX7x7DogT5Uv6fcLW5",
+			extKey:     "041e78e8039da73efa800000029d9cdb88df21fbe33af83e47cfffce7ffabe82b49ae365fe8426a9e1afa2aed603b88b9315bf4a481d071cac5615a2a07fbbb726d9bb173bb339c4a68b85c78054157b99d4",
 			isPrivate:  false,
-			parentFP:   uint32(0xBEF5A2F9),
+			parentFP:   uint32(0x9DA73EFA),
 			privKeyErr: ErrNotPrivHDKey,
-			pubKey:     "0357bfe1e341d01c69fe5654309956cbea516822fba8a601743a012a7896ee8dc2",
-			address:    "1NjxqbA9aZWnh17q1UW3rB4EPu79wDXj7x",
+			pubKey:     "03b88b9315bf4a481d071cac5615a2a07fbbb726d9bb173bb339c4a68b85c78054",
 		},
 	}
 
@@ -417,10 +339,10 @@ func TestExtendedKeyAPI(t *testing.T) {
 			continue
 		}
 
-		if key.isPrivate() != test.isPrivate {
+		if key.IsPrivate() != test.isPrivate {
 			t.Errorf("IsPrivate #%d (%s): mismatched key type -- "+
 				"want private %v, got private %v", i, test.name,
-				test.isPrivate, key.isPrivate())
+				test.isPrivate, key.IsPrivate())
 			continue
 		}
 
@@ -457,14 +379,6 @@ func TestExtendedKeyAPI(t *testing.T) {
 		}
 
 		pubKey := key.PublicKey()
-		/*
-			pubKey, err := key.PublicKey()
-			if err != nil {
-				t.Errorf("ECPubKey #%d (%s): unexpected error: %v", i,
-					test.name, err)
-				continue
-			}
-		*/
 		pubKeyStr := hex.EncodeToString(pubKey.Compress()[:])
 		if pubKeyStr != test.pubKey {
 			t.Errorf("ECPubKey #%d (%s): mismatched public key -- "+
@@ -472,141 +386,8 @@ func TestExtendedKeyAPI(t *testing.T) {
 				pubKeyStr)
 			continue
 		}
-
-		/*
-			addr, err := key.Address(&chaincfg.MainNetParams)
-			if err != nil {
-				t.Errorf("Address #%d (%s): unexpected error: %v", i,
-					test.name, err)
-				continue
-			}
-			if addr.EncodeAddress() != test.address {
-				t.Errorf("Address #%d (%s): mismatched address -- want "+
-					"%s, got %s", i, test.name, test.address,
-					addr.EncodeAddress())
-				continue
-			}
-		*/
 	}
 }
-
-/*
-// TestNet ensures the network related APIs work as intended.
-func TestNet(t *testing.T) {
-	tests := []struct {
-		name      string
-		key       string
-		newPriv   string
-		newPub    string
-		isPrivate bool
-	}{
-		// Private extended keys.
-		{
-			name:      "mainnet -> simnet",
-			key:       "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
-			newPriv:   "sprv8Erh3X3hFeKunvVdAGQQtambRPapECWiTDtvsTGdyrhzhbYgnSZajRRWbihzvq4AM4ivm6uso31VfKaukwJJUs3GYihXP8ebhMb3F2AHu3P",
-			newPub:    "spub4Tr3T2ab61tD1Qa6GHwRFiiKyRRJdfEZpSpXfqgFYCEyaPsqKysqHDjzSzMJSiUEGbcsG3w2SLMoTqn44B8x6u3MLRRkYfACTUBnHK79THk",
-			isPrivate: true,
-		},
-		{
-			name:      "simnet -> mainnet",
-			key:       "sprv8Erh3X3hFeKunvVdAGQQtambRPapECWiTDtvsTGdyrhzhbYgnSZajRRWbihzvq4AM4ivm6uso31VfKaukwJJUs3GYihXP8ebhMb3F2AHu3P",
-			newPriv:   "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
-			newPub:    "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
-			isPrivate: true,
-		},
-		{
-			name:      "mainnet -> regtest",
-			key:       "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
-			newPriv:   "tprv8ZgxMBicQKsPeDgjzdC36fs6bMjGApWDNLR9erAXMs5skhMv36j9MV5ecvfavji5khqjWaWSFhN3YcCUUdiKH6isR4Pwy3U5y5egddBr16m",
-			newPub:    "tpubD6NzVbkrYhZ4XgiXtGrdW5XDAPFCL9h7we1vwNCpn8tGbBcgfVYjXyhWo4E1xkh56hjod1RhGjxbaTLV3X4FyWuejifB9jusQ46QzG87VKp",
-			isPrivate: true,
-		},
-		{
-			name:      "regtest -> mainnet",
-			key:       "tprv8ZgxMBicQKsPeDgjzdC36fs6bMjGApWDNLR9erAXMs5skhMv36j9MV5ecvfavji5khqjWaWSFhN3YcCUUdiKH6isR4Pwy3U5y5egddBr16m",
-			newPriv:   "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
-			newPub:    "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
-			isPrivate: true,
-		},
-
-		// Public extended keys.
-		{
-			name:      "mainnet -> simnet",
-			key:       "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
-			newPub:    "spub4Tr3T2ab61tD1Qa6GHwRFiiKyRRJdfEZpSpXfqgFYCEyaPsqKysqHDjzSzMJSiUEGbcsG3w2SLMoTqn44B8x6u3MLRRkYfACTUBnHK79THk",
-			isPrivate: false,
-		},
-		{
-			name:      "simnet -> mainnet",
-			key:       "spub4Tr3T2ab61tD1Qa6GHwRFiiKyRRJdfEZpSpXfqgFYCEyaPsqKysqHDjzSzMJSiUEGbcsG3w2SLMoTqn44B8x6u3MLRRkYfACTUBnHK79THk",
-			newPub:    "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
-			isPrivate: false,
-		},
-		{
-			name:      "mainnet -> regtest",
-			key:       "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
-			newPub:    "tpubD6NzVbkrYhZ4XgiXtGrdW5XDAPFCL9h7we1vwNCpn8tGbBcgfVYjXyhWo4E1xkh56hjod1RhGjxbaTLV3X4FyWuejifB9jusQ46QzG87VKp",
-			isPrivate: false,
-		},
-		{
-			name:      "regtest -> mainnet",
-			key:       "tpubD6NzVbkrYhZ4XgiXtGrdW5XDAPFCL9h7we1vwNCpn8tGbBcgfVYjXyhWo4E1xkh56hjod1RhGjxbaTLV3X4FyWuejifB9jusQ46QzG87VKp",
-			newPub:    "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
-			isPrivate: false,
-		},
-	}
-
-	for i, test := range tests {
-		extKey, err := NewKeyFromString(test.key)
-		if err != nil {
-			t.Errorf("NewKeyFromString #%d (%s): unexpected error "+
-				"creating extended key: %v", i, test.name,
-				err)
-			continue
-		}
-
-		if !extKey.IsForNet(test.origNet) {
-			t.Errorf("IsForNet #%d (%s): key is not for expected "+
-				"network %v", i, test.name, test.origNet.Name)
-			continue
-		}
-
-		extKey.SetNet(test.newNet)
-		if !extKey.IsForNet(test.newNet) {
-			t.Errorf("SetNet/IsForNet #%d (%s): key is not for "+
-				"expected network %v", i, test.name,
-				test.newNet.Name)
-			continue
-		}
-
-		if test.isPrivate {
-			privStr := extKey.String()
-			if privStr != test.newPriv {
-				t.Errorf("Serialize #%d (%s): mismatched serialized "+
-					"private extended key -- got: %s, want: %s", i,
-					test.name, privStr, test.newPriv)
-				continue
-			}
-
-			extKey, err = extKey.Neuter()
-			if err != nil {
-				t.Errorf("Neuter #%d (%s): unexpected error: %v ", i,
-					test.name, err)
-				continue
-			}
-		}
-
-		pubStr := extKey.String()
-		if pubStr != test.newPub {
-			t.Errorf("Neuter #%d (%s): mismatched serialized "+
-				"public extended key -- got: %s, want: %s", i,
-				test.name, pubStr, test.newPub)
-			continue
-		}
-	}
-}
-*/
 
 // TestZero ensures that zeroing an extended key works as intended.
 func TestZero(t *testing.T) {
@@ -619,14 +400,14 @@ func TestZero(t *testing.T) {
 		{
 			name:   "test vector 1 chain m",
 			master: "000102030405060708090a0b0c0d0e0f",
-			extKey: "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
+			extKey: "041e78ff000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb7001e2d32d505698faa661cc459346ea9abb1a9c890ccd26b56ffad7d0bf492aca23f49c7d5",
 		},
 
 		// Test vector 2
 		{
 			name:   "test vector 2 chain m",
 			master: "fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542",
-			extKey: "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U",
+			extKey: "041e78ff00000000000000000062630af7cd0242358538297c89d7f52a17cef5989332bb08a1a0ef809417b01d003a4f489053d1bbe446655dd1ec847b973c8a42d8167d0b27184cfb23a3a5fc4ebe999d11",
 		},
 	}
 
@@ -635,10 +416,10 @@ func TestZero(t *testing.T) {
 	// times.
 	testZeroed := func(i int, testName string, key *HDKey) bool {
 		// Zeroing a key should result in it no longer being private
-		if key.isPrivate() {
+		if key.IsPrivate() {
 			t.Errorf("IsPrivate #%d (%s): mismatched key type -- "+
 				"want private %v, got private %v", i, testName,
-				false, key.isPrivate())
+				false, key.IsPrivate())
 			return false
 		}
 
@@ -650,7 +431,7 @@ func TestZero(t *testing.T) {
 			return false
 		}
 
-		wantKey := "1111111111111111111111111111111111111111111111111111111111111111111111111111114rcJhr"
+		wantKey := "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096d3dd0d"
 		serializedKey := key.String()
 		if serializedKey != wantKey {
 			t.Errorf("String #%d (%s): mismatched serialized key "+
@@ -667,22 +448,6 @@ func TestZero(t *testing.T) {
 			return false
 		}
 
-		/*
-			wantAddr := "1HT7xU2Ngenf7D4yocz2SAcnNLW7rK8d4E"
-			addr, err := key.Address(&chaincfg.MainNetParams)
-			if err != nil {
-				t.Errorf("Addres s #%d (%s): unexpected error: %v", i,
-					testName, err)
-				return false
-			}
-			if addr.EncodeAddress() != wantAddr {
-				t.Errorf("Address #%d (%s): mismatched address -- want "+
-					"%s, got %s", i, testName, wantAddr,
-					addr.EncodeAddress())
-				return false
-			}
-		*/
-
 		return true
 	}
 
@@ -694,14 +459,14 @@ func TestZero(t *testing.T) {
 				i, test.name, err)
 			continue
 		}
-		key, err := NewMasterHDKey(masterSeed, BitcoinMasterKey, BTCMainSecVersion)
+		key, err := NewMasterHDKey(masterSeed, testMasterKey, testSecretVersion)
 		if err != nil {
 			t.Errorf("NewMasterHDKey #%d (%s): unexpected error when "+
 				"creating new master key: %v", i, test.name,
 				err)
 			continue
 		}
-		neuteredKey, err := key.Neuter(BitcoinVMap)
+		neuteredKey, err := key.Neuter(testVMap)
 		if err != nil {
 			t.Errorf("Neuter #%d (%s): unexpected error: %v", i,
 				test.name, err)
@@ -726,7 +491,7 @@ func TestZero(t *testing.T) {
 				"error: %v", i, test.name, err)
 			continue
 		}
-		neuteredKey, err = key.Neuter(BitcoinVMap)
+		neuteredKey, err = key.Neuter(testVMap)
 		if err != nil {
 			t.Errorf("Neuter #%d (%s): unexpected error: %v", i,
 				test.name, err)

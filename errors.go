@@ -11,10 +11,6 @@ var (
 	ErrDeriveHardenedFromPublic = errors.New("Cannot derive hardened key from " +
 		"public key")
 
-	// ErrInvalidChecksum indicates that the 4-byte checksum failed to verify upon
-	// base58 deserialization.
-	ErrInvalidChecksum = errors.New("Bad checksum found during base58 decoding")
-
 	// ErrInvalidKeyLength indicates an attempt to decode an HDKey that is not
 	// HDKeySize bytes in length.
 	ErrInvalidKeyLength = errors.New("Invalid key length")

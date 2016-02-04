@@ -11,9 +11,6 @@ import (
 // Start of hardened key indexes, 2^31
 const HardenedKeyStart = 0x80000000
 
-// BitcoinMasterKey is the master seed according to BIP32.
-var BitcoinMasterKey = []byte("Bitcoin seed")
-
 // NewMasterHDKey computes the root HD key from the given seed, key and private
 // version.
 func NewMasterHDKey(seed, key []byte, version uint32) (*HDKey, error) {
@@ -25,7 +22,7 @@ func NewMasterHDKey(seed, key []byte, version uint32) (*HDKey, error) {
 	il, chainCode := util.HMAC512Split(key, seed)
 	defer func() { util.Zero(il); util.Zero(chainCode) }()
 
-	// Left 32 bytes becomes master secret key
+	// Left 32 bytes becomes master secret key, clean up temporary SecretKey
 	sk, err := eckey.NewSecretKey(il)
 	if err != nil {
 		return nil, ErrUnusableSeed
@@ -39,7 +36,7 @@ func NewMasterHDKey(seed, key []byte, version uint32) (*HDKey, error) {
 func (k *HDKey) Child(i uint32) (*HDKey, error) {
 	// Verify that child derivation is possible
 	isChildHardened := i >= HardenedKeyStart
-	if !k.isPrivate() && isChildHardened {
+	if !k.IsPrivate() && isChildHardened {
 		return nil, ErrDeriveHardenedFromPublic
 	}
 
@@ -55,7 +52,7 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 	// Copy child number as uint32
 	binary.BigEndian.PutUint32(seed[childKeySize:], i)
 
-	// il, ir = HMAC-512(key, seed), defer clean up
+	// il, ir = HMAC-512(key, seed), clean up intermediary state
 	il, childChainCode := util.HMAC512Split(k.chainCode(), seed)
 	defer func() { util.Zero(il); util.Zero(childChainCode) }()
 
@@ -63,7 +60,7 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 	ilInt := new(big.Int).SetBytes(il)
 	defer func() { ilInt.SetUint64(0) }()
 
-	// Check that ilInt creates valid SecretKey, defer clean up
+	// Check that ilInt creates valid SecretKey, clean up temporary SecretKey
 	sk, err := eckey.NewSecretKeyInt(ilInt)
 	if err != nil {
 		return nil, ErrUnusableSeed
@@ -76,7 +73,7 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 	fp := binary.BigEndian.Uint32(fpBytes)
 
 	// If key is private, derive a child secret key
-	if k.isPrivate() {
+	if k.IsPrivate() {
 		sk := k.computeChildSecret(ilInt)
 		return newHDSecretKey(ver, k.depth()+1, fp, i, childChainCode, sk), nil
 	}
@@ -94,7 +91,7 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 // signing capabilities.
 func (k *HDKey) Neuter(vMap VersionMap) (*HDKey, error) {
 	// HDKey is already public
-	if !k.isPrivate() {
+	if !k.IsPrivate() {
 		return k, nil
 	}
 

@@ -41,7 +41,7 @@ func NewCompressedPublicKey(b []byte) (*CompressedPublicKey, error) {
 	return cpk, nil
 }
 
-// CompressPublicKey creates a space efficient representation of a public key
+// Compress creates a space efficient representation of a public key
 // to be used for persistent storage.
 func (pk *PublicKey) Compress() *CompressedPublicKey {
 
@@ -60,7 +60,7 @@ func (pk *PublicKey) Compress() *CompressedPublicKey {
 	return cpk
 }
 
-// UncompressPublicKey computes the public key for a given compressed public key.
+// Uncompress computes the public key for a given compressed public key.
 func (cpk *CompressedPublicKey) Uncompress() (*PublicKey, error) {
 	// Should only execute the decompression branch of ParsePublicKey
 	pk_s, err := btcec.ParsePubKey(cpk[:], S256)

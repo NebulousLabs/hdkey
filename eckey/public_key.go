@@ -68,17 +68,6 @@ func newPublicKeyCoords(x, y *big.Int) *PublicKey {
 	return pk
 }
 
-// IsOnCurve returns a boolean denoting whether the PublicKey is on the
-// secp256k1 curve.
-func (pk *PublicKey) IsOnCurve() error {
-	pk_s := structFromPublicKey(pk)
-	if S256.IsOnCurve(pk_s.X, pk_s.Y) {
-		return nil
-	}
-
-	return ErrPublicKeyNotOnCurve
-}
-
 // structFromPublicKey deserializes a PublicKey into a btcec.PublicKey.
 func structFromPublicKey(pk *PublicKey) *btcec.PublicKey {
 	return &btcec.PublicKey{

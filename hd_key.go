@@ -1,10 +1,8 @@
 package hdkey
 
 import (
-	"bytes"
 	"encoding/binary"
 
-	"github.com/btcsuite/btcutil/base58"
 	"github.com/cfromknecht/hdkey/eckey"
 	"github.com/cfromknecht/hdkey/util"
 )
@@ -63,7 +61,7 @@ type HDKey [HDKeySize]byte
 // an error if the HDKey corresponds to a compressed public key, since the
 // secret key cannot be recovered.
 func (k *HDKey) SecretKey() (*eckey.SecretKey, error) {
-	if !k.isPrivate() {
+	if !k.IsPrivate() {
 		return nil, ErrNotPrivHDKey
 	}
 
@@ -80,7 +78,7 @@ func (k *HDKey) SecretKey() (*eckey.SecretKey, error) {
 // operations, as it is assumes the HDKey is uncorrupted.
 func (k *HDKey) PublicKey() *eckey.PublicKey {
 	// If key is private, compute public key from secret key
-	if k.isPrivate() {
+	if k.IsPrivate() {
 		// Will not fail due to previous conditional
 		sk, _ := k.SecretKey()
 
@@ -98,7 +96,7 @@ func (k *HDKey) PublicKey() *eckey.PublicKey {
 // returned.  Otherwise, the public key is computed from the secret key and
 // subsequently compressed.
 func (k *HDKey) CompressedPublicKey() *eckey.CompressedPublicKey {
-	if !k.isPrivate() {
+	if !k.IsPrivate() {
 		cpk := new(eckey.CompressedPublicKey)
 		copy(cpk[:], k[childKeyOffset:])
 
@@ -113,38 +111,26 @@ func (k *HDKey) CompressedPublicKey() *eckey.CompressedPublicKey {
 
 // String converts an HDKey into a checksumed, base58 encoded string.
 func (k *HDKey) String() string {
-	checksum := util.Hash256d(k[:])[:checksumSize]
-	data := make([]byte, HDKeySize+checksumSize)
-	copy(data[:HDKeySize], k[:])
-	copy(data[HDKeySize:], checksum[:])
-
-	return base58.Encode(data[:])
+	return util.HexChecksumEncode(k[:])
 }
 
 // NewKeyFromString decodes a base58 encoded string, verifies the included
 // checksum, and checks that the public key is on the secp256k1 curve.
 func NewKeyFromString(s string) (*HDKey, error) {
-	// Decode base58 string and verify length
-	checksumKeyBytes := base58.Decode(s)
-	if len(checksumKeyBytes) != HDKeySize+checksumSize {
-		return nil, ErrInvalidKeyLength
-	}
-
-	// Verify checksum integrity
-	keyBytes := checksumKeyBytes[:HDKeySize]
-	checksum := util.Hash256d(keyBytes)[:checksumSize]
-	if bytes.Compare(checksum, checksumKeyBytes[HDKeySize:]) != 0 {
-		return nil, ErrInvalidChecksum
-	}
-
-	// Compute public key from child key bytes to check that the associated
-	// PublicKey lies on the secp256k1 curve.
-	pk, err := publicKeyFromUnsafeBytes(keyBytes[childKeyOffset:])
+	keyBytes, err := util.HexChecksumDecode(s)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := pk.IsOnCurve(); err != nil {
+	// Check that number of bytes can create an HDKey
+	if len(keyBytes) != HDKeySize {
+		return nil, ErrInvalidKeyLength
+	}
+
+	// Compute public key from child key bytes to check that the associated
+	// PublicKey lies on the secp256k1 curve.
+	_, err = publicKeyFromUnsafeBytes(keyBytes[childKeyOffset:])
+	if err != nil {
 		return nil, err
 	}
 
@@ -248,9 +234,9 @@ func (k *HDKey) parentFingerprint() uint32 {
 	return binary.BigEndian.Uint32(fpBytes)
 }
 
-// isPrivate returns a boolean denoting whether the HDKey belongs to a public or
+// IsPrivate returns a boolean denoting whether the HDKey belongs to a public or
 // private key.  This function will return true if the HDKey has been zeroed.
-func (k *HDKey) isPrivate() bool {
+func (k *HDKey) IsPrivate() bool {
 	return k[childKeyOffset] == 0 && !k.isZeroed()
 }
 
