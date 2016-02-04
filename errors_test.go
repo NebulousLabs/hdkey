@@ -62,7 +62,7 @@ func TestErrors(t *testing.T) {
 	}{
 		{
 			name: "invalid key length",
-			key:  "000000008cb90125",
+			key:  "000000008cb9012517c8",
 			err:  ErrInvalidKeyLength,
 		},
 		{
@@ -72,12 +72,12 @@ func TestErrors(t *testing.T) {
 		},
 		{
 			name: "pubkey not on curve",
-			key:  "041e78e8000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb70210000000000000000000000000000000000000000000000000000000000000004b9b8587",
+			key:  "51a1000000000000000000003f3fa35b54b93f8060c6fec5b57d9ffd464dcc6ba22e73ae27537e81ec0fe4031bd8766f5f55f4af7bfcf25850e6acb8bb286a8f08dae5b7ea42e8e82674fa3c423a22d92f65",
 			err:  errors.New("pubkey isn't on secp256k1 curve"),
 		},
 		{
 			name:      "unsupported version",
-			key:       "00000000000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb7001e2d32d505698faa661cc459346ea9abb1a9c890ccd26b56ffad7d0bf492aca2b3bc2339",
+			key:       "51ac0000000000000000009a5ab3b8257c3f4cf2764bcd97dbb7c8c73c3c4892f5fdaa34cad0e2932a10dc00b42a43bbc3ef1dc0fb3639414f34fb2d9d61d11aaf889f5f856e1ea1adcb53edb6cf00fb620a",
 			err:       nil,
 			neuter:    true,
 			neuterErr: ErrUnknownVersionMapping,

@@ -13,7 +13,7 @@ const HardenedKeyStart = 0x80000000
 
 // NewMasterHDKey computes the root HD key from the given seed, key and private
 // version.
-func NewMasterHDKey(seed, key []byte, version uint32) (*HDKey, error) {
+func NewMasterHDKey(seed, key []byte, version uint16) (*HDKey, error) {
 	if len(seed) < MinSeedSize || len(seed) > MaxSeedSize {
 		return nil, ErrInvalidSeedLength
 	}

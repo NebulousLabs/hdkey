@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-const ChecksumSize = 4
+const ChecksumSize = 6
 
 var ErrInvalidChecksum = errors.New("Invalid checksum")
 
@@ -29,7 +29,7 @@ func HexChecksumDecode(s string) ([]byte, error) {
 	}
 
 	// If there are less than 4 decoded bytes, checksum cannot be valid
-	if len(b) < 4 {
+	if len(b) < ChecksumSize {
 		return nil, ErrInvalidChecksum
 	}
 

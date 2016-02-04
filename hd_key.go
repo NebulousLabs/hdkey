@@ -10,7 +10,7 @@ import (
 const (
 	// Size of an HDKey version constant, interpreted as a 32 bit unsigned
 	// integer.
-	versionSize = 4
+	versionSize = 2
 	// Size of the HDKey depth from master, interpreted as an 8 bit unsigned
 	// integer.  A depth of 0 is used for the master key.
 	depthSize = 1
@@ -48,9 +48,6 @@ const (
 		childNumberSize +
 		chainCodeSize +
 		childKeySize // 78 bytes
-
-	// Size of the checksum used for base58 serialization.
-	checksumSize = 4
 )
 
 // HDKey stores an extended key's version, depth, child number, chain code,
@@ -147,7 +144,7 @@ func (k *HDKey) Zero() {
 
 // newHDSecretKey serializes an HDKey given the associated metadeta and
 // SecretKey.
-func newHDSecretKey(ver uint32, depth byte, fp, i uint32, cc []byte,
+func newHDSecretKey(ver uint16, depth byte, fp, i uint32, cc []byte,
 	sk *eckey.SecretKey) *HDKey {
 	k := new(HDKey)
 	k.serializeMetadata(ver, depth, fp, i, cc)
@@ -158,7 +155,7 @@ func newHDSecretKey(ver uint32, depth byte, fp, i uint32, cc []byte,
 
 // newHDPublicKey serializes an HDKey given the associated metadeta and
 // PublicKey.
-func newHDPublicKey(ver uint32, depth byte, fp, i uint32, cc []byte,
+func newHDPublicKey(ver uint16, depth byte, fp, i uint32, cc []byte,
 	cpk *eckey.CompressedPublicKey) *HDKey {
 	k := new(HDKey)
 	k.serializeMetadata(ver, depth, fp, i, cc)
@@ -169,8 +166,8 @@ func newHDPublicKey(ver uint32, depth byte, fp, i uint32, cc []byte,
 
 // serializeMetadata writes the version, depth, parent fingerprint, child
 // number, and chain code to an HDKey.
-func (k *HDKey) serializeMetadata(ver uint32, d byte, fp, i uint32, cc []byte) {
-	binary.BigEndian.PutUint32(k[versionOffset:depthOffset], ver)
+func (k *HDKey) serializeMetadata(ver uint16, d byte, fp, i uint32, cc []byte) {
+	binary.BigEndian.PutUint16(k[versionOffset:depthOffset], ver)
 	k[depthOffset] = d
 	binary.BigEndian.PutUint32(k[fingerprintOffset:childNumberOffset], fp)
 	binary.BigEndian.PutUint32(k[childNumberOffset:chainCodeOffset], i)
@@ -201,10 +198,10 @@ func publicKeyFromUnsafeBytes(b []byte) (*eckey.PublicKey, error) {
 	return sk.PublicKey(), nil
 }
 
-// version returns the HDKey's version as a uint32.
-func (k *HDKey) version() uint32 {
+// version returns the HDKey's version as a uint16.
+func (k *HDKey) version() uint16 {
 	versionBytes := k[versionOffset:depthOffset]
-	return binary.BigEndian.Uint32(versionBytes)
+	return binary.BigEndian.Uint16(versionBytes)
 }
 
 // depth returns the HDKey's depth from the master as a single byte.  A master
