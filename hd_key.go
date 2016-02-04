@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	// Size of an HDKey version constant, interpreted as a 32 bit unsigned
+	// Size of an HDKey version constant, interpreted as a 16 bit unsigned
 	// integer.
 	versionSize = 2
 	// Size of the HDKey depth from master, interpreted as an 8 bit unsigned
@@ -47,12 +47,44 @@ const (
 		fingerprintSize +
 		childNumberSize +
 		chainCodeSize +
-		childKeySize // 78 bytes
+		childKeySize // 76 bytes
+
+	// Prefix length of the SHA256d digest to include during hex serialization.
+	checksumSize = 6
 )
 
 // HDKey stores an extended key's version, depth, child number, chain code,
 // parent fingerprint, and derived public or private key.
 type HDKey [HDKeySize]byte
+
+// NewKeyFromString decodes a hex encoded string, verifies the included
+// checksum, and checks that the public key is on the secp256k1 curve.
+func NewKeyFromString(s string) (*HDKey, error) {
+	keyBytes, err := util.HexChecksumDecode(s, checksumSize)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check that number of bytes can create an HDKey
+	if len(keyBytes) != HDKeySize {
+		return nil, ErrInvalidKeyLength
+	}
+
+	// Verify that key bytes create a valid public or secret key.
+	if err = validPublicOrSecretBytes(keyBytes[childKeyOffset:]); err != nil {
+		return nil, err
+	}
+
+	k := new(HDKey)
+	copy(k[:], keyBytes)
+
+	return k, nil
+}
+
+// String converts an HDKey into a checksummed, hex encoded string.
+func (k *HDKey) String() string {
+	return util.HexChecksumEncode(k[:], checksumSize)
+}
 
 // SecretKey returns the secret key belonging to an HDKey.  This method returns
 // an error if the HDKey corresponds to a compressed public key, since the
@@ -106,35 +138,10 @@ func (k *HDKey) CompressedPublicKey() *eckey.CompressedPublicKey {
 	return sk.PublicKey().Compress()
 }
 
-// String converts an HDKey into a checksumed, base58 encoded string.
-func (k *HDKey) String() string {
-	return util.HexChecksumEncode(k[:])
-}
-
-// NewKeyFromString decodes a base58 encoded string, verifies the included
-// checksum, and checks that the public key is on the secp256k1 curve.
-func NewKeyFromString(s string) (*HDKey, error) {
-	keyBytes, err := util.HexChecksumDecode(s)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check that number of bytes can create an HDKey
-	if len(keyBytes) != HDKeySize {
-		return nil, ErrInvalidKeyLength
-	}
-
-	// Compute public key from child key bytes to check that the associated
-	// PublicKey lies on the secp256k1 curve.
-	_, err = publicKeyFromUnsafeBytes(keyBytes[childKeyOffset:])
-	if err != nil {
-		return nil, err
-	}
-
-	k := new(HDKey)
-	copy(k[:], keyBytes)
-
-	return k, nil
+// IsPrivate returns a boolean denoting whether the HDKey belongs to private
+// key.
+func (k *HDKey) IsPrivate() bool {
+	return k[childKeyOffset] == 0 && !k.isZeroed()
 }
 
 // Zero securely clears the contents of an HDKey from memory.
@@ -174,28 +181,28 @@ func (k *HDKey) serializeMetadata(ver uint16, d byte, fp, i uint32, cc []byte) {
 	copy(k[chainCodeOffset:childKeyOffset], cc[:])
 }
 
-// publicKeyFromUnsafeBytes computes the public key from a byte slice assumed to
-// be ChildKeySize bytes in length.  This function handles the two cases where
-// the underlying key is either a serialized secret key or public key.
-func publicKeyFromUnsafeBytes(b []byte) (*eckey.PublicKey, error) {
+// validPublicOrSecretBytes takes a byte slice, assumed to be childKeySize
+// bytes in length, and determines whether the associated public or private key
+// corresponds to a valid point on secp256k1 curve.
+func validPublicOrSecretBytes(b []byte) error {
 	// Assume derived key is a CompressedPublicKey if first byte is not 0.
 	if b[0] != 0 {
 		cpk, err := eckey.NewCompressedPublicKey(b)
 		if err != nil {
-			return nil, err
+			return nil
 		}
 
-		return cpk.Uncompress()
+		_, err = cpk.Uncompress()
+
+		return err
 	}
 
-	// Otherwise assume SecretKey and compute PublicKey.
-	sk, err := eckey.NewSecretKey(b[1:])
-	if err != nil {
-		return nil, err
+	// Otherwise verify SecretKey
+	if _, err := eckey.NewSecretKey(b[1:]); err != nil {
+		return err
 	}
-	defer func() { sk.Zero() }() // Clean up temporary secret key
 
-	return sk.PublicKey(), nil
+	return nil
 }
 
 // version returns the HDKey's version as a uint16.
@@ -229,12 +236,6 @@ func (k *HDKey) chainCode() []byte {
 func (k *HDKey) parentFingerprint() uint32 {
 	fpBytes := k[fingerprintOffset:childNumberOffset]
 	return binary.BigEndian.Uint32(fpBytes)
-}
-
-// IsPrivate returns a boolean denoting whether the HDKey belongs to a public or
-// private key.  This function will return true if the HDKey has been zeroed.
-func (k *HDKey) IsPrivate() bool {
-	return k[childKeyOffset] == 0 && !k.isZeroed()
 }
 
 // isZeroed returns a boolean value indicating whether or not the HDKey is

@@ -43,16 +43,14 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 	// Assemble seed data for HMAC
 	seed := make([]byte, childKeySize+childNumberSize)
 	if isChildHardened {
-		// Copy 0x00 || 32-byte secret key
-		copy(seed, k[childKeyOffset:])
+		copy(seed, k[childKeyOffset:]) // Copy 0x00 || 32-byte secret key
 	} else {
-		// Copy HEADER || 32-byte X-coordinate
-		copy(seed, k.CompressedPublicKey()[:])
+		copy(seed, k.CompressedPublicKey()[:]) // Copy HEADER || 32-byte X-coord
 	}
 	// Copy child number as uint32
 	binary.BigEndian.PutUint32(seed[childKeySize:], i)
 
-	// il, ir = HMAC-512(key, seed), clean up intermediary state
+	// il, ir = HMAC-512(chainCode, seed), clean up intermediary state
 	il, childChainCode := util.HMAC512Split(k.chainCode(), seed)
 	defer func() { util.Zero(il); util.Zero(childChainCode) }()
 
@@ -60,16 +58,16 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 	ilInt := new(big.Int).SetBytes(il)
 	defer func() { ilInt.SetUint64(0) }()
 
-	// Check that ilInt creates valid SecretKey, clean up temporary SecretKey
-	sk, err := eckey.NewSecretKeyInt(ilInt)
+	// Check that ilInt creates valid SecretKey, clean up intermediary SecretKey
+	isk, err := eckey.NewSecretKeyInt(ilInt)
 	if err != nil {
 		return nil, ErrUnusableSeed
 	}
-	defer func() { sk.Zero() }()
+	defer func() { isk.Zero() }()
 
 	ver := k.version()
 	parentCPK := k.CompressedPublicKey()
-	fpBytes := util.Hash160(parentCPK[:])[:fingerprintSize]
+	fpBytes := util.Hash256d(parentCPK[:])[:fingerprintSize]
 	fp := binary.BigEndian.Uint32(fpBytes)
 
 	// If key is private, derive a child secret key
@@ -78,8 +76,8 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 		return newHDSecretKey(ver, k.depth()+1, fp, i, childChainCode, sk), nil
 	}
 
-	// Otherwise, compute child public key
-	cpk, err := computeChildPublic(parentCPK, sk)
+	// Otherwise, derive child public key
+	cpk, err := computeChildPublic(parentCPK, isk)
 	if err != nil {
 		return nil, err
 	}
