@@ -27,7 +27,7 @@ func NewMasterHDKey(seed, key []byte, version uint16) (*HDKey, error) {
 	if err != nil {
 		return nil, ErrUnusableSeed
 	}
-	defer func() { sk.Zero() }()
+	defer sk.Zero()
 
 	return newHDSecretKey(version, 0, 0, 0, chainCode, sk), nil
 }
@@ -56,14 +56,14 @@ func (k *HDKey) Child(i uint32) (*HDKey, error) {
 
 	// Left 32 bytes becomes intermediate secret key, defer clean up
 	ilInt := new(big.Int).SetBytes(il)
-	defer func() { ilInt.SetUint64(0) }()
+	defer ilInt.SetUint64(0)
 
 	// Check that ilInt creates valid SecretKey, clean up intermediary SecretKey
 	isk, err := eckey.NewSecretKeyInt(ilInt)
 	if err != nil {
 		return nil, ErrUnusableSeed
 	}
-	defer func() { isk.Zero() }()
+	defer isk.Zero()
 
 	ver := k.version()
 	parentCPK := k.CompressedPublicKey()
@@ -111,7 +111,7 @@ func (k *HDKey) Neuter(vMap VersionMap) (*HDKey, error) {
 // intermediary state.
 func (k *HDKey) computeChildSecret(ilInt *big.Int) *eckey.SecretKey {
 	keyInt := new(big.Int).SetBytes(k[childKeyOffset+1:])
-	defer func() { keyInt.SetUint64(0) }()
+	defer keyInt.SetUint64(0)
 
 	ilInt.Add(ilInt, keyInt)
 	ilInt.Mod(ilInt, eckey.S256.N)

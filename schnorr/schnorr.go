@@ -38,7 +38,7 @@ nonce:
 		goto nonce
 	}
 	// Clear nonce after completion
-	defer func() { k.Zero() }()
+	defer k.Zero()
 
 	// Compute non-interactive challenge
 	e := util.Hash256d(append([]byte(hash), kG[:]...))

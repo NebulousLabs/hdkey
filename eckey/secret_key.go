@@ -31,7 +31,7 @@ func NewSecretKey(b []byte) (*SecretKey, error) {
 
 	// Copy secret bytes and clean up
 	s := new(big.Int).SetBytes(b)
-	defer func() { s.SetUint64(0) }()
+	defer s.SetUint64(0)
 
 	sk, err := NewSecretKeyInt(s)
 	if err != nil {
