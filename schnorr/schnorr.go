@@ -4,8 +4,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/cfromknecht/hdkey/eckey"
-	"github.com/cfromknecht/hdkey/util"
+	"github.com/NebulousLabs/hdkey/eckey"
+	"github.com/NebulousLabs/hdkey/util"
 )
 
 const (

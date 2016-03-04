@@ -1,13 +1,36 @@
+//
 // Copyright (c) 2014 The btcsuite developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
+//
+//
+// LICENSE
+//
+// Copyright (c) 2013 Conformal Systems LLC.
+//
+// Permission to use, copy, modify, and distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+// ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+// OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
 
 package hdkey
 
 import (
+	"bytes"
 	"encoding/hex"
+	"errors"
 	"reflect"
 	"testing"
+
+	"github.com/NebulousLabs/hdkey/util"
 )
 
 const (
@@ -138,9 +161,9 @@ tests:
 			continue
 		}
 
-		extKey, err := NewMasterHDKey(masterSeed, testMasterKey, testSecretVersion)
+		extKey, err := NewMaster(masterSeed, testMasterKey, testSecretVersion)
 		if err != nil {
-			t.Errorf("NewMasterHDKey #%d (%s): unexpected error when "+
+			t.Errorf("NewMaster #%d (%s): unexpected error when "+
 				"creating new master key: %v", i, test.name,
 				err)
 			continue
@@ -158,22 +181,22 @@ tests:
 		privStr := extKey.String()
 		if privStr != test.wantPriv {
 			t.Errorf("Serialize #%d (%s): mismatched serialized "+
-				"private extended key -- got: %s, want: %s", i,
-				test.name, privStr, test.wantPriv)
+				"private extended key -- got: %s, want: %s",
+				i, test.name, privStr, test.wantPriv)
 		}
 
 		pubKey, err := extKey.Neuter(testVMap)
 		if err != nil {
-			t.Errorf("Neuter #%d (%s): unexpected error: %v ", i,
-				test.name, err)
+			t.Errorf("Neuter #%d (%s): unexpected error: %v ",
+				i, test.name, err)
 			continue
 		}
 
 		// Neutering a second time should have no effect.
 		pubKey, err = pubKey.Neuter(testVMap)
 		if err != nil {
-			t.Errorf("Neuter #%d (%s): unexpected error: %v", i,
-				test.name, err)
+			t.Errorf("Neuter #%d (%s): unexpected error: %v",
+				i, test.name, err)
 			return
 		}
 
@@ -275,11 +298,11 @@ var publicDerivationTests = []struct {
 func TestPublicDerivation(t *testing.T) {
 tests:
 	for i, test := range publicDerivationTests {
-		extKey, err := NewKeyFromString(test.master)
+		extKey, err := New(test.master)
 		if err != nil {
-			t.Errorf("NewKeyFromString #%d (%s): unexpected error "+
-				"creating extended key: %v", i, test.name,
-				err)
+			t.Errorf("New #%d (%s): unexpected error "+
+				"creating extended key: %v",
+				i, test.name, err)
 			continue
 		}
 
@@ -295,35 +318,51 @@ tests:
 		pubStr := extKey.String()
 		if pubStr != test.wantPub {
 			t.Errorf("Child #%d (%s): mismatched serialized "+
-				"public extended key -- got: %s, want: %s", i,
-				test.name, pubStr, test.wantPub)
+				"public extended key -- got: %s, want: %s",
+				i, test.name, pubStr, test.wantPub)
 			continue
 		}
 	}
 }
 
 var extendTests = []struct {
-	name       string
-	extKey     string
-	isPrivate  bool
-	parentFP   uint32
-	privKey    string
-	privKeyErr error
-	pubKey     string
+	name        string
+	version     uint16
+	depth       byte
+	childNumber uint32
+	chainCode   []byte
+	parentFP    uint32
+	isPrivate   bool
+	extKey      string
+	privKey     string
+	privKeyErr  error
+	pubKey      string
 }{
 	{
-		name:      "test vector 1 master node private",
-		extKey:    "51ad000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb7001e2d32d505698faa661cc459346ea9abb1a9c890ccd26b56ffad7d0bf492aca27c52a5db3f81",
-		isPrivate: true,
+		name:        "test vector 1 master node private",
+		version:     testSecretVersion,
+		depth:       0,
+		childNumber: 0,
+		chainCode: []byte{215, 13, 181, 169, 119, 127, 84, 43, 218, 192, 74, 161,
+			32, 159, 2, 142, 154, 113, 184, 217, 248, 221, 11, 56, 94, 235, 38, 65,
+			218, 92, 142, 183},
 		parentFP:  0,
+		isPrivate: true,
+		extKey:    "51ad000000000000000000d70db5a9777f542bdac04aa1209f028e9a71b8d9f8dd0b385eeb2641da5c8eb7001e2d32d505698faa661cc459346ea9abb1a9c890ccd26b56ffad7d0bf492aca27c52a5db3f81",
 		privKey:   "1e2d32d505698faa661cc459346ea9abb1a9c890ccd26b56ffad7d0bf492aca2",
 		pubKey:    "0210acb01355c989d305071919fe3bca7be9937e5f5e3cd9548122e8b1773bfee9",
 	},
 	{
-		name:       "test vector 1 chain m/0H/1/2H public",
-		extKey:     "51a103faa820a8800000029d9cdb88df21fbe33af83e47cfffce7ffabe82b49ae365fe8426a9e1afa2aed603b88b9315bf4a481d071cac5615a2a07fbbb726d9bb173bb339c4a68b85c78054d9837a855836",
-		isPrivate:  false,
+		name:        "test vector 1 chain m/0H/1/2H public",
+		version:     testPublicVersion,
+		depth:       3,
+		childNumber: HardenedKeyStart + 2,
+		chainCode: []byte{157, 156, 219, 136, 223, 33, 251, 227, 58, 248, 62, 71,
+			207, 255, 206, 127, 250, 190, 130, 180, 154, 227, 101, 254, 132, 38, 169,
+			225, 175, 162, 174, 214},
 		parentFP:   uint32(0xFAA820A8),
+		isPrivate:  false,
+		extKey:     "51a103faa820a8800000029d9cdb88df21fbe33af83e47cfffce7ffabe82b49ae365fe8426a9e1afa2aed603b88b9315bf4a481d071cac5615a2a07fbbb726d9bb173bb339c4a68b85c78054d9837a855836",
 		privKeyErr: ErrNotPrivHDKey,
 		pubKey:     "03b88b9315bf4a481d071cac5615a2a07fbbb726d9bb173bb339c4a68b85c78054",
 	},
@@ -332,48 +371,76 @@ var extendTests = []struct {
 // TestExtendedKeyAPI ensures the API on the ExtendedKey type works as intended.
 func TestExtendedKeyAPI(t *testing.T) {
 	for i, test := range extendTests {
-		key, err := NewKeyFromString(test.extKey)
+		key, err := New(test.extKey)
 		if err != nil {
-			t.Errorf("NewKeyFromString #%d (%s): unexpected "+
-				"error: %v", i, test.name, err)
+			t.Errorf("New #%d (%s): unexpected error: %v", i, test.name, err)
 			continue
 		}
 
-		if key.IsPrivate() != test.isPrivate {
-			t.Errorf("IsPrivate #%d (%s): mismatched key type -- "+
-				"want private %v, got private %v", i, test.name,
-				test.isPrivate, key.IsPrivate())
+		if key.version() != test.version {
+			t.Errorf("version #%d (%s): mismatched key version --"+
+				"want version %d, got version %d",
+				i, test.name, test.version, key.version())
+			continue
+		}
+
+		if key.depth() != test.depth {
+			t.Errorf("done #%d (%s): mismatched key depth -- "+
+				"want depth %d, got depth %d",
+				i, test.name, test.depth, key.depth())
+			continue
+		}
+
+		if key.childNumber() != test.childNumber {
+			t.Errorf("childNumber #%d (%s): mismatched key child number -- "+
+				"want child number %d, got child number %d",
+				i, test.name, test.childNumber, key.childNumber())
+			continue
+		}
+
+		if bytes.Compare(key.chainCode(), test.chainCode) != 0 {
+			t.Errorf("chainCode #%d (%s): mismatched key chain code -- "+
+				"want chain code %d, got chain code %d",
+				i, test.name, test.chainCode, key.chainCode())
 			continue
 		}
 
 		parentFP := key.parentFingerprint()
 		if test.parentFP != parentFP {
 			t.Errorf("ParentFingerprint #%d (%s): mismatched "+
-				"parent fingerprint -- want %d, got %d", i,
-				test.name, test.parentFP, parentFP)
+				"parent fingerprint -- want %d, got %d",
+				i, test.name, test.parentFP, parentFP)
+			continue
+		}
+
+		if key.IsPrivate() != test.isPrivate {
+			t.Errorf("IsPrivate #%d (%s): mismatched key type -- "+
+				"want private %v, got private %v",
+				i, test.name, test.isPrivate, key.IsPrivate())
 			continue
 		}
 
 		serializedKey := key.String()
 		if serializedKey != test.extKey {
 			t.Errorf("String #%d (%s): mismatched serialized key "+
-				"-- want %s, got %s", i, test.name, test.extKey,
-				serializedKey)
+				"-- want %s, got %s", i, test.name,
+				test.extKey, serializedKey)
 			continue
 		}
 
 		privKey, err := key.SecretKey()
 		if !reflect.DeepEqual(err, test.privKeyErr) {
-			t.Errorf("ECPrivKey #%d (%s): mismatched error: want "+
-				"%v, got %v", i, test.name, test.privKeyErr, err)
+			t.Errorf("ECPrivKey #%d (%s): mismatched error: "+
+				"want %v, got %v",
+				i, test.name, test.privKeyErr, err)
 			continue
 		}
 		if test.privKeyErr == nil {
 			privKeyStr := hex.EncodeToString(privKey[:])
 			if privKeyStr != test.privKey {
 				t.Errorf("ECPrivKey #%d (%s): mismatched "+
-					"private key -- want %s, got %s", i,
-					test.name, test.privKey, privKeyStr)
+					"private key -- want %s, got %s",
+					i, test.name, test.privKey, privKeyStr)
 				continue
 			}
 		}
@@ -382,8 +449,8 @@ func TestExtendedKeyAPI(t *testing.T) {
 		pubKeyStr := hex.EncodeToString(pubKey.Compress()[:])
 		if pubKeyStr != test.pubKey {
 			t.Errorf("ECPubKey #%d (%s): mismatched public key -- "+
-				"want %s, got %s", i, test.name, test.pubKey,
-				pubKeyStr)
+				"want %s, got %s",
+				i, test.name, test.pubKey, pubKeyStr)
 			continue
 		}
 	}
@@ -418,16 +485,16 @@ func TestZero(t *testing.T) {
 		// Zeroing a key should result in it no longer being private
 		if key.IsPrivate() {
 			t.Errorf("IsPrivate #%d (%s): mismatched key type -- "+
-				"want private %v, got private %v", i, testName,
-				false, key.IsPrivate())
+				"want private %v, got private %v",
+				i, testName, false, key.IsPrivate())
 			return false
 		}
 
 		parentFP := key.parentFingerprint()
 		if parentFP != 0 {
 			t.Errorf("ParentFingerprint #%d (%s): mismatched "+
-				"parent fingerprint -- want %d, got %d", i,
-				testName, 0, parentFP)
+				"parent fingerprint -- want %d, got %d",
+				i, testName, 0, parentFP)
 			return false
 		}
 
@@ -435,8 +502,8 @@ func TestZero(t *testing.T) {
 		serializedKey := key.String()
 		if serializedKey != wantKey {
 			t.Errorf("String #%d (%s): mismatched serialized key "+
-				"-- want %s, got %s", i, testName, wantKey,
-				serializedKey)
+				"-- want %s, got %s",
+				i, testName, wantKey, serializedKey)
 			return false
 		}
 
@@ -444,7 +511,8 @@ func TestZero(t *testing.T) {
 		_, err := key.SecretKey()
 		if !reflect.DeepEqual(err, wantErr) {
 			t.Errorf("ECPrivKey #%d (%s): mismatched error: want "+
-				"%v, got %v", i, testName, wantErr, err)
+				"%v, got %v",
+				i, testName, wantErr, err)
 			return false
 		}
 
@@ -459,17 +527,17 @@ func TestZero(t *testing.T) {
 				i, test.name, err)
 			continue
 		}
-		key, err := NewMasterHDKey(masterSeed, testMasterKey, testSecretVersion)
+		key, err := NewMaster(masterSeed, testMasterKey, testSecretVersion)
 		if err != nil {
-			t.Errorf("NewMasterHDKey #%d (%s): unexpected error when "+
-				"creating new master key: %v", i, test.name,
-				err)
+			t.Errorf("NewMaster #%d (%s): unexpected error when "+
+				"creating new master key: %v",
+				i, test.name, err)
 			continue
 		}
 		neuteredKey, err := key.Neuter(testVMap)
 		if err != nil {
-			t.Errorf("Neuter #%d (%s): unexpected error: %v", i,
-				test.name, err)
+			t.Errorf("Neuter #%d (%s): unexpected error: %v",
+				i, test.name, err)
 			continue
 		}
 
@@ -485,16 +553,16 @@ func TestZero(t *testing.T) {
 		}
 
 		// Deserialize key and get the neutered version.
-		key, err = NewKeyFromString(test.extKey)
+		key, err = New(test.extKey)
 		if err != nil {
-			t.Errorf("NewKeyFromString #%d (%s): unexpected "+
-				"error: %v", i, test.name, err)
+			t.Errorf("New #%d (%s): unexpected error: %v",
+				i, test.name, err)
 			continue
 		}
 		neuteredKey, err = key.Neuter(testVMap)
 		if err != nil {
-			t.Errorf("Neuter #%d (%s): unexpected error: %v", i,
-				test.name, err)
+			t.Errorf("Neuter #%d (%s): unexpected error: %v",
+				i, test.name, err)
 			continue
 		}
 
@@ -508,5 +576,169 @@ func TestZero(t *testing.T) {
 		if !testZeroed(i, test.name+" deserialized neutered", key) {
 			continue
 		}
+	}
+}
+
+// TestErrors performs some negative tests for various invalid cases to ensure
+// the errors are handled properly.
+func TestErrors(t *testing.T) {
+	// Should get an error when seed has too few bytes.
+	_, err := NewMaster(bytes.Repeat([]byte{0x00}, 15), testMasterKey,
+		testSecretVersion)
+	if err != ErrInvalidSeedLength {
+		t.Errorf("MasterHDKey: mismatched error -- got: %v, want: %v",
+			err, ErrInvalidSeedLength)
+	}
+
+	// Should get an error when seed has too many bytes.
+	_, err = NewMaster(bytes.Repeat([]byte{0x00}, 65), testMasterKey,
+		testSecretVersion)
+	if err != ErrInvalidSeedLength {
+		t.Errorf("MasterHDKey: mismatched error -- got: %v, want: %v",
+			err, ErrInvalidSeedLength)
+	}
+
+	// Generate a new key and neuter it to a public extended key.
+	seed, err := GenerateSeed(RecommendedSeedSize)
+	if err != nil {
+		t.Errorf("GenerateSeed: unexpected error: %v", err)
+		return
+	}
+	extKey, err := NewMaster(seed, testMasterKey, testSecretVersion)
+	if err != nil {
+		t.Errorf("MasterHDKey: unexpected error: %v", err)
+		return
+	}
+	pubKey, err := extKey.Neuter(testVMap)
+	if err != nil {
+		t.Errorf("Neuter: unexpected error: %v", err)
+		return
+	}
+
+	// Deriving a hardened child extended key should fail from a public key.
+	_, err = pubKey.Child(HardenedKeyStart)
+	if err != ErrDeriveHardenedFromPublic {
+		t.Errorf("Child: mismatched error -- got: %v, want: %v",
+			err, ErrDeriveHardenedFromPublic)
+	}
+
+	// NewKeyFromString failure tests.
+	tests := []struct {
+		name      string
+		key       string
+		err       error
+		neuter    bool
+		neuterErr error
+	}{
+		{
+			name: "invalid key length",
+			key:  "000000008cb9012517c8",
+			err:  ErrInvalidKeyLength,
+		},
+		{
+			name: "bad checksum",
+			key:  "041e78e80242a4",
+			err:  util.ErrInvalidChecksum,
+		},
+		{
+			name: "pubkey not on curve",
+			key:  "51a1000000000000000000003f3fa35b54b93f8060c6fec5b57d9ffd464dcc6ba22e73ae27537e81ec0fe4031bd8766f5f55f4af7bfcf25850e6acb8bb286a8f08dae5b7ea42e8e82674fa3c423a22d92f65",
+			err:  errors.New("pubkey isn't on secp256k1 curve"),
+		},
+		{
+			name:      "unsupported version",
+			key:       "51ac0000000000000000009a5ab3b8257c3f4cf2764bcd97dbb7c8c73c3c4892f5fdaa34cad0e2932a10dc00b42a43bbc3ef1dc0fb3639414f34fb2d9d61d11aaf889f5f856e1ea1adcb53edb6cf00fb620a",
+			err:       nil,
+			neuter:    true,
+			neuterErr: ErrUnknownVersionMapping,
+		},
+	}
+
+	for i, test := range tests {
+		extKey, err := New(test.key)
+		if !reflect.DeepEqual(err, test.err) {
+			t.Errorf("NewKeyFromString #%d (%s): mismatched error "+
+				"-- got: %v, want: %v",
+				i, test.name, err, test.err)
+			continue
+		}
+
+		if test.neuter {
+			_, err := extKey.Neuter(testVMap)
+			if !reflect.DeepEqual(err, test.neuterErr) {
+				t.Errorf("Neuter #%d (%s): mismatched error "+
+					"-- got: %v, want: %v",
+					i, test.name, err, test.neuterErr)
+				continue
+			}
+		}
+	}
+}
+
+// TestGenenerateSeed ensures the GenerateSeed function works as intended.
+func TestGenenerateSeed(t *testing.T) {
+	tests := []struct {
+		name   string
+		length uint8
+		err    error
+	}{
+		// Test various valid lengths.
+		{name: "16 bytes", length: 16},
+		{name: "17 bytes", length: 17},
+		{name: "20 bytes", length: 20},
+		{name: "32 bytes", length: 32},
+		{name: "64 bytes", length: 64},
+
+		// Test invalid lengths.
+		{name: "15 bytes", length: 15, err: ErrInvalidSeedLength},
+		{name: "65 bytes", length: 65, err: ErrInvalidSeedLength},
+	}
+
+	for i, test := range tests {
+		seed, err := GenerateSeed(test.length)
+		if !reflect.DeepEqual(err, test.err) {
+			t.Errorf("GenerateSeed #%d (%s): unexpected error -- "+
+				"want %v, got %v",
+				i, test.name, test.err, err)
+			continue
+		}
+
+		if test.err == nil && len(seed) != int(test.length) {
+			t.Errorf("GenerateSeed #%d (%s): length mismatch -- "+
+				"got %d, want %d",
+				i, test.name, len(seed), test.length)
+			continue
+		}
+	}
+}
+
+func BenchmarkDerivePublicFromSecret(b *testing.B) {
+	seed, _ := GenerateSeed(RecommendedSeedSize)
+	master, _ := NewMaster(seed, testMasterKey, testSecretVersion)
+
+	b.ResetTimer()
+	for i := uint32(0); i < uint32(b.N); i++ {
+		_, _ = master.Child(i)
+	}
+}
+
+func BenchmarkDeriveSecretFromSecret(b *testing.B) {
+	seed, _ := GenerateSeed(RecommendedSeedSize)
+	master, _ := NewMaster(seed, testMasterKey, testSecretVersion)
+
+	b.ResetTimer()
+	for i := uint32(0); i < uint32(b.N); i++ {
+		_, _ = master.Child(HardenedKeyStart + i)
+	}
+}
+
+func BenchmarkDerivePublicFromPublic(b *testing.B) {
+	seed, _ := GenerateSeed(RecommendedSeedSize)
+	master, _ := NewMaster(seed, testMasterKey, testSecretVersion)
+	masterPub, _ := master.Neuter(testVMap)
+
+	b.ResetTimer()
+	for i := uint32(0); i < uint32(b.N); i++ {
+		_, _ = masterPub.Child(i)
 	}
 }

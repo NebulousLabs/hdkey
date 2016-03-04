@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/NebulousLabs/hdkey/util"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/cfromknecht/hdkey/util"
 )
 
 func BenchmarkGenerateKeyPairDeterministic(b *testing.B) {
