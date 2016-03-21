@@ -1,2 +1,2 @@
 # hdkey
-erialized Hierarchical Deterministic Keys
+Serialized Hierarchical Deterministic Keys
