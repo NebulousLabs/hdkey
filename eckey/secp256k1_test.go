@@ -45,6 +45,44 @@ var ecTestCases = []ecTestCase{
 	},
 }
 
+func TestAdd(t *testing.T) {
+	for i, test1 := range ecTestCases {
+		_, pk1 := keyPairFromTestCase(test1)
+		for j, test2 := range ecTestCases {
+			_, pk2 := keyPairFromTestCase(test2)
+
+			// Compute expected value
+			x1 := new(big.Int).SetBytes(pk1[:CoordinateSize])
+			y1 := new(big.Int).SetBytes(pk1[CoordinateSize:])
+			x2 := new(big.Int).SetBytes(pk2[:CoordinateSize])
+			y2 := new(big.Int).SetBytes(pk2[CoordinateSize:])
+			ex, ey := S256.Add(x1, y1, x2, y2)
+
+			esum := newPublicKeyCoords(ex, ey)
+			sum := Add(pk1, pk2)
+
+			switch {
+			case esum == nil && esum != sum:
+				t.Errorf("[Add] #%d (%s): unexpected sum cases %d and %d -- "+
+					"want nil, got %d",
+					"sum with nil", i, j, esum)
+				continue
+
+			case esum != nil && esum == sum:
+				t.Errorf("[Add] #%d (%s): unexpected sum cases %d and %d -- "+
+					"got %d and %d",
+					"non-nil sum different pointers", i, j, esum, sum)
+				continue
+
+			case bytes.Compare(esum[:], sum[:]) != 0:
+				t.Errorf("[Add] #%d (%s): unexpected sum cases %d and %d -- "+
+					"want %d, got %d",
+					"compute correct sum", i, j, esum, sum)
+			}
+		}
+	}
+}
+
 func keyPairFromTestCase(test ecTestCase) (*SecretKey, *PublicKey) {
 	d, _ := new(big.Int).SetString(test.D, 10)
 	x, _ := new(big.Int).SetString(test.X, 16)
@@ -55,39 +93,4 @@ func keyPairFromTestCase(test ecTestCase) (*SecretKey, *PublicKey) {
 	pk, _ := NewPublicKeyCoords(x, y)
 
 	return sk, pk
-}
-
-func TestAdd(t *testing.T) {
-	for _, test1 := range ecTestCases {
-		_, pk1 := keyPairFromTestCase(test1)
-		for _, test2 := range ecTestCases {
-			_, pk2 := keyPairFromTestCase(test2)
-
-			// Compute expected value
-			x1 := new(big.Int).SetBytes(pk1[:CoordinateSize])
-			y1 := new(big.Int).SetBytes(pk1[CoordinateSize:])
-			x2 := new(big.Int).SetBytes(pk2[:CoordinateSize])
-			y2 := new(big.Int).SetBytes(pk2[CoordinateSize:])
-
-			ex, ey := S256.Add(x1, y1, x2, y2)
-
-			esum := newPublicKeyCoords(ex, ey)
-
-			sum := Add(pk1, pk2)
-
-			if esum == nil && esum != sum {
-				t.Error("Sum did not match expected sum of nil")
-				continue
-			}
-
-			if esum != nil && esum == sum {
-				t.Error("Non-nil sum should have different pointers")
-				continue
-			}
-
-			if bytes.Compare(esum[:], sum[:]) != 0 {
-				t.Error("Failed to compute public key sum")
-			}
-		}
-	}
 }

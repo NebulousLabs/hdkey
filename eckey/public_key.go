@@ -3,8 +3,8 @@ package eckey
 import (
 	"math/big"
 
+	"github.com/NebulousLabs/hdkey/util"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/cfromknecht/hdkey/util"
 )
 
 const (

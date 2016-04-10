@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"math/big"
 
-	"github.com/cfromknecht/hdkey/eckey"
-	"github.com/cfromknecht/hdkey/util"
+	"github.com/NebulousLabs/hdkey/eckey"
+	"github.com/NebulousLabs/hdkey/util"
 )
 
 // Start of hardened key indexes, 2^31
@@ -13,7 +13,7 @@ const HardenedKeyStart = 0x80000000
 
 // NewMasterHDKey computes the root HD key from the given seed, key and private
 // version.
-func NewMasterHDKey(seed, key []byte, version uint16) (*HDKey, error) {
+func NewMaster(seed, key []byte, version uint16) (*HDKey, error) {
 	if len(seed) < MinSeedSize || len(seed) > MaxSeedSize {
 		return nil, ErrInvalidSeedLength
 	}

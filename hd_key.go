@@ -3,8 +3,8 @@ package hdkey
 import (
 	"encoding/binary"
 
-	"github.com/cfromknecht/hdkey/eckey"
-	"github.com/cfromknecht/hdkey/util"
+	"github.com/NebulousLabs/hdkey/eckey"
+	"github.com/NebulousLabs/hdkey/util"
 )
 
 const (
@@ -59,7 +59,7 @@ type HDKey [HDKeySize]byte
 
 // NewKeyFromString decodes a hex encoded string, verifies the included
 // checksum, and checks that the public key is on the secp256k1 curve.
-func NewKeyFromString(s string) (*HDKey, error) {
+func New(s string) (*HDKey, error) {
 	keyBytes, err := util.HexChecksumDecode(s, checksumSize)
 	if err != nil {
 		return nil, err

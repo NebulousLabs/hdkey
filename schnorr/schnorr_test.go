@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/cfromknecht/hdkey/eckey"
+	"github.com/NebulousLabs/hdkey/eckey"
 )
 
 type ecTestCase struct {
